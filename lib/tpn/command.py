@@ -9,9 +9,9 @@ from abc import (
     abstractmethod,
 )
 
-import ctk.util
+import tpn.util
 
-from ctk.util import (
+from .util import (
     iterable,
     add_linesep_if_missing,
     prepend_error_if_missing,
@@ -38,7 +38,7 @@ def try_close_file(f):
 
 def get_io_streams(add_linesep_if_missing=True):
     if add_linesep_if_missing:
-        add = ctk.util.add_linesep_if_missing
+        add = tpn.util.add_linesep_if_missing
     else:
         add = lambda s: s
 

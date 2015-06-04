@@ -58,7 +58,7 @@ from subprocess import (
 
 from csv import reader as csv_reader
 
-from ctk import (
+from tpn import (
     logic,
 )
 
@@ -217,7 +217,7 @@ def generate_repr(obj, exclude=None, include=None, yielder=None):
     )
 
 def get_query_slices(total_size, ideal_chunk_size=None, min_chunk_size=None):
-    from ctk.config import get_config
+    from .config import get_config
     conf = get_config()
     if not ideal_chunk_size:
         ideal_chunk_size = conf.sqlalchemy_ideal_chunk_size
@@ -336,7 +336,7 @@ def clone_dict(d):
 
 def find_all_files_ending_with(dirname, suffix):
     results = []
-    from ctk.path import join_path
+    from .path import join_path
     for (root, dirs, files) in os.walk(dirname):
         results += [
             join_path(root, file)

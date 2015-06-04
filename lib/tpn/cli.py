@@ -18,22 +18,22 @@ from textwrap import (
     dedent,
 )
 
-import ctk
+import tpn
 
-from ctk.config import (
+from .config import (
     Config,
     ConfigObjectAlreadyCreated,
     get_config,
     _clear_config_if_already_created,
 )
 
-from ctk.command import (
+from .command import (
     Command,
     CommandError,
     ClashingCommandNames,
 )
 
-from ctk.util import (
+from .util import (
     iterable,
     ensure_unique,
     add_linesep_if_missing,
@@ -44,7 +44,7 @@ from ctk.util import (
     DecayDict,
 )
 
-from ctk.invariant import (
+from .invariant import (
     Invariant,
 )
 
@@ -243,16 +243,16 @@ class CLI(object):
         self.returncode = 0
         self.commandline = None
 
-        include_ctk = True
+        include_tpn = True
         for name in self.module_names:
-            if name == '-ctk':
-                include_ctk = False
-                self.module_names.remove('-ctk')
-            elif name == 'ctk':
-                include_ctk = False
+            if name == '-tpn':
+                include_tpn = False
+                self.module_names.remove('-tpn')
+            elif name == 'tpn':
+                include_tpn = False
 
-        if include_ctk:
-            self.module_names.insert(0, 'ctk')
+        if include_tpn:
+            self.module_names.insert(0, 'tpn')
 
         ensure_unique(self.module_names)
 
@@ -457,7 +457,7 @@ class CLI(object):
         self._error(self.__usage__)
 
     def version(self, args=None):
-        sys.stdout.write(add_linesep_if_missing(ctk.__version__))
+        sys.stdout.write(add_linesep_if_missing(tpn.__version__))
         return self._exit(0)
 
     def help(self, args=None):
@@ -484,7 +484,7 @@ def extract_command_args_and_kwds(*args_):
 
 def run(*args_):
     (args, kwds) = extract_command_args_and_kwds(*args_)
-    ctk.config._clear_config_if_already_created()
+    tpn.config._clear_config_if_already_created()
     return CLI(*args, **kwds)
 
 def run_mp(**kwds):
@@ -493,9 +493,9 @@ def run_mp(**kwds):
 
 if __name__ == '__main__':
     # Intended invocation:
-    #   python -m ctk.cli <program_name> <library_name> \
+    #   python -m tpn.cli <program_name> <library_name> \
     #                           <command_name> [arg1 arg2 argN]
-    # i.e. python -m ctk.cli dstk dstoolkit gdcf -f ...
+    # i.e. python -m tpn.cli dstk dstoolkit gdcf -f ...
 
     # Multiprocessor support: prefix command_name with @.  The @ will be
     # removed, the command will be run, and then the command.result field

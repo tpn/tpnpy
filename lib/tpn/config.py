@@ -38,11 +38,11 @@ except ImportError:
         RawConfigParser,
     )
 
-from ctk.path import (
+from .path import (
     join_path,
 )
 
-from ctk.util import (
+from .util import (
     memoize,
     iterable,
     classproperty,

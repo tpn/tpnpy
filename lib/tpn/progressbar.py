@@ -175,7 +175,7 @@ def brogressbar(iterable, desc='', total_bytes=None, leave=False,
     try:
         dummy = iterable.bytes_read
     except AttributeError:
-        from ctk.util import progressbar as _progressbar
+        from .util import progressbar as _progressbar
         for obj in _progressbar(iterable):
             yield obj
         raise StopIteration

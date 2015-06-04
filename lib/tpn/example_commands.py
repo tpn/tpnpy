@@ -3,7 +3,7 @@
 #===============================================================================
 import os
 
-from ctk.command import (
+from .command import (
     Command,
     CommandError,
 )

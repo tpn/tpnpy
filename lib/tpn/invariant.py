@@ -8,7 +8,7 @@ import datetime
 import linecache
 import itertools
 
-from ctk.util import (
+from .util import (
     endswith,
 )
 

@@ -1,11 +1,11 @@
 #===============================================================================
 # Imports
 #===============================================================================
-from ctk.command import (
+from .command import (
     Command,
 )
 
-from ctk.invariant import (
+from .invariant import (
     InvariantAwareObject,
 )
 

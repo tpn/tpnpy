@@ -996,7 +996,7 @@ class timer:
         if self.nsec < 1000:
             self.fmt = "%dns" % self.nsec
         elif self.msec < 1000:
-            self.fmt = "%dµs" % self.msec
+            self.fmt = "%dus" % self.msec
         elif self.mill < 1000:
             self.fmt = "%dms" % self.mill
         else:

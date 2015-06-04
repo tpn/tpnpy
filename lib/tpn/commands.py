@@ -10,5 +10,9 @@ from .command import (
 # Commands
 #===============================================================================
 
+class HelloWorld(Command):
+    def run(self):
+        self._out('Hello, World!')
+
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et                                             :

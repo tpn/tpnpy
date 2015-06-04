@@ -495,7 +495,6 @@ if __name__ == '__main__':
     # Intended invocation:
     #   python -m tpn.cli <program_name> <library_name> \
     #                           <command_name> [arg1 arg2 argN]
-    # i.e. python -m tpn.cli dstk dstoolkit gdcf -f ...
 
     # Multiprocessor support: prefix command_name with @.  The @ will be
     # removed, the command will be run, and then the command.result field
@@ -557,5 +556,10 @@ if __name__ == '__main__':
     sys.stdout.write("started %d processes\n" % len(procs))
 
     args_queue.join()
+
+def main():
+    args = [ 'tpn', 'tpn' ] + sys.argv[1:]
+    cli = run(*args)
+    sys.exit(cli.returncode)
 
 # vim:set ts=8 sw=4 sts=4 tw=78 et:

@@ -111,6 +111,14 @@ def get_config():
         raise NoConfigObjectCreated()
     return CONFIG
 
+def get_or_create_config():
+    try:
+        conf = get_config()
+    except NoConfigObjectCreated:
+        conf = Config()
+        conf.load()
+    return conf
+
 def _clear_config_if_already_created():
     global CONFIG
     if CONFIG:
@@ -227,6 +235,11 @@ class Config(RawConfigParser):
             raise RuntimeError(msg)
 
         return abspath(p)
+
+    @property
+    @memoize
+    def src_dir(self):
+        return self._absdir('src_dir')
 
     @property
     def gnuwin32_dir(self):

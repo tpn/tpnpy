@@ -327,6 +327,12 @@ def strip_empty_lines(text):
             break
     return text
 
+def cr_to_crlf(text):
+    text = text.replace('\n', '\r\n')
+    # Just in case it's already \r\n:
+    text = text.replace('\r\r', '\r')
+    return text
+
 def clone_dict(d):
     """
     Helper method intended to be used with defaultdicts -- returns a new dict

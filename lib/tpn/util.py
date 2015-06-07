@@ -1672,4 +1672,4 @@ if __name__ == '__main__':
     import doctest
     doctest.testmod()
 
-# vim:set ts=8 sw=4 sts=4 tw=78 et:
+# vim:set ts=8 sw=4 sts=4 tw=80 et                                             :

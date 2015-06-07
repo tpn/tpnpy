@@ -88,8 +88,8 @@ SHORT_MONTHS_UPPER_SET = set(SHORT_MONTHS_UPPER)
 is_linux = (sys.platform.startswith('linux'))
 is_darwin = (sys.platform == 'darwin')
 is_win32 = (sys.platform == 'win32')
+is_cygwin = (sys.platform == 'cygwin')
 
-assert sum((is_linux, is_darwin, is_win32)) == 1
 #===============================================================================
 # Helper Methods
 #===============================================================================
@@ -319,6 +319,13 @@ def strip_crlf(line):
     elif line[-1:] == u'\n':
         line = line[:-1]
     return line
+
+def strip_empty_lines(text):
+    while True:
+        (text, count) = re.subn('\n *\n', '\n', text)
+        if count == 0:
+            break
+    return text
 
 def clone_dict(d):
     """

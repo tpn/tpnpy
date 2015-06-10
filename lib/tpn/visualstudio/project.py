@@ -13,8 +13,11 @@ from ..util import (
     strip_empty_lines,
 )
 
+from os.path import basename
+
 from ..path import (
     abspath,
+    dirname,
     join_path,
 )
 
@@ -63,7 +66,7 @@ class SourceFile(Dict):
             return ''
         fmt = (
             '    <%s Include="%s">\n'
-            '       <Filter>%s</Filter>\n'
+            '      <Filter>%s</Filter>\n'
             '    </%s>'
         )
         r = [ '<ItemGroup>', ]
@@ -84,7 +87,7 @@ class SourceFile(Dict):
             return ''
         fmt = (
             '<Filter Include="%s">\n'
-            '       <UniqueIdentifier>%s</UniqueIdentifier>\n'
+            '      <UniqueIdentifier>%s</UniqueIdentifier>\n'
             '    </Filter>'
         )
         return fmt % (cls.filtername, guid)
@@ -127,9 +130,9 @@ class CythonFile(SourceFile):
 class Project:
     name = None
     # Relative to path:
-    relative_src_dir = 'src'
+    relative_src_dirs = [ 'src', ]
     # Relative to path
-    pcbuild_dir = '..\\pyparallel\\PCbuild\\'
+    pcbuild_dir = '..\\..\\PCbuild\\'
     pcbuild_prefix = ''
     compile_ext = [ '.c', '.cpp' ]
     header_ext = [ '.h', '.hpp' ]
@@ -143,6 +146,9 @@ class Project:
     resource_defines = {}
     resource_release_defines = {}
     resource_debug_defines = {}
+    # Set to True to enable C++ exceptions (/EHsc)
+    cpp_exceptions = None
+    include_dirs = []
 
     @property
     @memoize
@@ -163,7 +169,11 @@ class Project:
 
     @property
     def base(self):
-        return conf.src_dir
+        return join_path(conf.src_dir, 'pyparallel', 'contrib')
+
+    @property
+    def base_relative_to_pcbuild(self):
+        return '..\\contrib'
 
     @property
     def path(self):
@@ -195,26 +205,35 @@ class Project:
 
     @property
     def dirname_macro(self):
-        return '$(%sDir)' % self.name
+        return '$(%s)' % self.dirname_macro_name
+
+    @property
+    def dirname_macro_name(self):
+        return '%sDir' % self.name
+
+    @property
+    def dirname_macro_value(self):
+        return '\\'.join((self.base_relative_to_pcbuild, basename(self.path)))
 
     def load(self):
         extensions = self.extensions
         exts = extensions.keys()
 
         with chdir(self.path):
-            for (root, dirs, files) in os.walk(self.relative_src_dir):
-                for f in files:
-                    ix = f.rfind('.')
-                    if ix == -1:
-                        continue
-                    ext = f[ix:].lower()
-                    if ext not in exts:
-                        continue
-                    cls = extensions[ext]
-                    relpath = '\\'.join((self.dirname_macro, root, f))
-                    source = cls(f, relpath)
-                    self.sources.append(source)
-                    self.source_files.append(relpath)
+            for d in self.relative_src_dirs:
+                for (root, dirs, files) in os.walk(d):
+                    for f in files:
+                        ix = f.rfind('.')
+                        if ix == -1:
+                            continue
+                        ext = f[ix:].lower()
+                        if ext not in exts:
+                            continue
+                        cls = extensions[ext]
+                        relpath = '\\'.join((self.dirname_macro, root, f))
+                        source = cls(f, relpath)
+                        self.sources.append(source)
+                        self.source_files.append(relpath)
 
 
     def __getitem__(self, name):
@@ -236,6 +255,14 @@ class Project:
     @property
     def others(self):
         return OtherFile.vcxproj()
+
+    @property
+    def pythons(self):
+        return PythonFile.vcxproj()
+
+    @property
+    def cythons(self):
+        return Cythons.vcxproj()
 
     @property
     def vcxproj(self):
@@ -292,6 +319,29 @@ class Project:
     @property
     def vcxproj_filters(self):
         return strip_empty_lines(vcxproj_filters_template % self)
+
+    @property
+    def exception_handling(self):
+        if self.cpp_exceptions:
+            return '\n      <ExceptionHandling>Sync</ExceptionHandling>'
+        else:
+            return ''
+
+    @property
+    def additional_include_dirs(self):
+        if not self.include_dirs:
+            return ''
+
+        dirs = ';'.join([
+            '\\'.join((self.dirname_macro, d))
+                for d in self.include_dirs
+        ])
+        fmt = (
+            '\n      '
+            '<AdditionalIncludeDirectories>%s'
+            '</AdditionalIncludeDirectories>'
+        )
+        return fmt % dirs
 
     def _preprocessor_defines(self, d1, d2=None):
         if not d1:

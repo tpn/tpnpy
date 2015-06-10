@@ -50,6 +50,9 @@ vcxproj_template = """\
     <RootNamespace>%(name)s</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
+  <PropertyGroup Label="UserMacros">
+    <%(dirname_macro_name)s>%(dirname_macro_value)s</%(dirname_macro_name)s>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -174,7 +177,7 @@ vcxproj_template = """\
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>%(exception_handling)s
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -182,12 +185,12 @@ vcxproj_template = """\
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>%(exception_handling)s
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>%(exception_handling)s
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -195,12 +198,12 @@ vcxproj_template = """\
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>%(exception_handling)s
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='PGInstrument|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(%(name)sDir);%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>%(exception_handling)s
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">
@@ -208,12 +211,12 @@ vcxproj_template = """\
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>%(exception_handling)s
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='PGUpdate|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>%(exception_handling)s
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">
@@ -221,7 +224,7 @@ vcxproj_template = """\
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>%(exception_handling)s
     </ClCompile>
   </ItemDefinitionGroup>
   %(includes)s
@@ -263,7 +266,7 @@ props_template = """\
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
   </PropertyGroup>
   <ItemDefinitionGroup>
-    <ClCompile>%(compiles_props)s
+    <ClCompile>%(compiles_props)s%(additional_include_dirs)s
     </ClCompile>
     <ResourceCompile>%(resources_props)s
     </ResourceCompile>
@@ -277,7 +280,7 @@ props_debug_template = """\
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
   </PropertyGroup>
   <ItemDefinitionGroup>
-    <ClCompile>%(compiles_debug_props)s
+    <ClCompile>%(compiles_debug_props)s%(additional_include_dirs)s
     </ClCompile>
     <ResourceCompile>%(resources_debug_props)s
     </ResourceCompile>
@@ -288,9 +291,10 @@ guids_template = """\
     guid = '%s'
     source_filterdef_guid = '%s'
     include_filterdef_guid = '%s'
+    other_filterdef_guid = '%s'
     python_filterdef_guid = '%s'
     cython_filterdef_guid = '%s'
-    resources_filterdef_guid = '%s'
+    resource_filterdef_guid = '%s'
 """
 num_guids = guids_template.count('%s')
 
@@ -301,7 +305,7 @@ def gen_guids():
     t = guids_template
     uuids = [
         '{%s}' % str(uuid.uuid1()).upper()
-            for _ in xrange(0, num_guids)
+            for _ in range(0, num_guids)
     ]
     return t % tuple(uuids)
 

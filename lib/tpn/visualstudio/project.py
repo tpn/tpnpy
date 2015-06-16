@@ -138,6 +138,7 @@ class Project:
     header_ext = [ '.h', '.hpp' ]
     resource_ext = [ '.rc' ]
     other_ext = [ '.txt' ]
+    cython_exts = [ '.pyx', '.pxd' ]
     sources = []
     source_files = []
     compile_defines = {}
@@ -149,6 +150,12 @@ class Project:
     # Set to True to enable C++ exceptions (/EHsc)
     cpp_exceptions = None
     include_dirs = []
+    exclude_dirs = []
+    exclude_files = []
+
+    @property
+    def project_name(self):
+        return self.name
 
     @property
     @memoize
@@ -162,9 +169,10 @@ class Project:
             x[ext] = ResourceFile
         for ext in self.other_ext:
             x[ext] = OtherFile
+        for ext in self.cython_exts:
+            x[ext] = CythonFile
 
         x['.py'] = PythonFile
-        x['.pyx'] = CythonFile
         return x
 
     @property
@@ -189,19 +197,31 @@ class Project:
 
     @property
     def vcxproj_filename(self):
-        return join_path(self.pcbuild_abspath, self.name + '.vcxproj')
+        return join_path(
+            self.pcbuild_abspath,
+            self.project_name + '.vcxproj',
+        )
 
     @property
     def vcxproj_filters_filename(self):
-        return join_path(self.pcbuild_abspath, self.name + '.vcxproj.filters')
+        return join_path(
+            self.pcbuild_abspath,
+            self.project_name + '.vcxproj.filters',
+        )
 
     @property
     def props_filename(self):
-        return join_path(self.pcbuild_abspath, self.name + '.props')
+        return join_path(
+            self.pcbuild_abspath,
+            self.project_name + '.props',
+        )
 
     @property
     def props_debug_filename(self):
-        return join_path(self.pcbuild_abspath, self.name + '_debug.props')
+        return join_path(
+            self.pcbuild_abspath,
+            self.project_name + '_debug.props',
+        )
 
     @property
     def dirname_macro(self):
@@ -215,9 +235,14 @@ class Project:
     def dirname_macro_value(self):
         return '\\'.join((self.base_relative_to_pcbuild, basename(self.path)))
 
+    def exclude_custom(self, root, filename):
+        return False
+
     def load(self):
         extensions = self.extensions
         exts = extensions.keys()
+        exclude_files = set(self.exclude_files)
+        exclude_dirs = set(self.exclude_dirs)
 
         with chdir(self.path):
             for d in self.relative_src_dirs:
@@ -228,6 +253,10 @@ class Project:
                             continue
                         ext = f[ix:].lower()
                         if ext not in exts:
+                            continue
+                        if f in exclude_files:
+                            continue
+                        if self.exclude_custom(root, f):
                             continue
                         cls = extensions[ext]
                         relpath = '\\'.join((self.dirname_macro, root, f))

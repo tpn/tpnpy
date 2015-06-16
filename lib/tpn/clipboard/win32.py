@@ -1,3 +1,6 @@
+#===============================================================================
+# Imports
+#===============================================================================
 import sys
 
 from win32con import (
@@ -12,16 +15,31 @@ from win32clipboard import (
     SetClipboardData,
 )
 
-def cb(text=None, fmt=CF_UNICODETEXT, cls=unicode):
+#===============================================================================
+# Globals/Aliases
+#===============================================================================
+is_py3 = sys.version_info.major == 3
+if is_py3:
+    unicode_class = str
+else:
+    unicode_class = unicode
+
+#===============================================================================
+# Helpers
+#===============================================================================
+
+def cb(text=None, fmt=CF_UNICODETEXT, cls=unicode_class, out=None):
     OpenClipboard()
     if not text:
         text = GetClipboardData(fmt)
         CloseClipboard()
         return text
     EmptyClipboard()
-    SetClipboardData(fmt, cls(text) if cls else text)
+    data = cls(text) if cls and not isinstance(text, cls) else text
+    SetClipboardData(fmt, data)
     CloseClipboard()
-    sys.stdout.write("copied %d bytes into clipboard...\n" % len(text))
+    if not out:
+        out = lambda m: sys.stdout.write(m + '\n')
+    out("copied %d characters into clipboard..." % len(data))
 
-
-# vim:set ts=8 sw=4 sts=4 tw=78 et:
+# vim:set ts=8 sw=4 sts=4 tw=80 et                                             :

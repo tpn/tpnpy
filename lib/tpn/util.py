@@ -423,10 +423,12 @@ def add_linesep_if_missing(s):
     return '' if not s else (s if s[-1] is os.linesep else s + os.linesep)
 
 def strip_linesep_if_present(s):
+    if not s:
+        return ''
     if s.endswith('\r\n'):
         return s[-2]
     elif s[-1] == '\n':
-        return s[-1]
+        return s[:-1]
     else:
         return s
 

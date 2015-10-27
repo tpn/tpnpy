@@ -58,7 +58,7 @@ def run_setup():
         description="Trent's Dev Tools",
         author='Trent Nelson',
         author_email='trent@nospam.trent.me',
-        url='http://tpn.nyc/',
+        url='http://github.com/tpn',
         packages=find_packages('lib'),
         package_dir={'': 'lib'},
         entry_points={

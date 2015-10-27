@@ -89,10 +89,44 @@ CTYPEDEF_XSAVE_FORMAT = '''\
         UCHAR Reserved4[224]
     ctypedef XSAVE_FORMAT *PXSAVE_FORMAT'''
 
+WINDOWS_CreateThreadpoolIo = '''\
+PTP_IO WINAPI CreateThreadpoolIo(
+  _In_        HANDLE                fl,
+  _In_        PTP_WIN32_IO_CALLBACK pfnio,
+  _Inout_opt_ PVOID                 pv,
+  _In_opt_    PTP_CALLBACK_ENVIRON  pcbe
+);'''
+
+CYTHON_CreateThreadpoolIo = '''\
+    PTP_IO __stdcall CreateThreadpoolIo(
+        HANDLE                fl,
+        PTP_WIN32_IO_CALLBACK pfnio,
+        PVOID                 pv,
+        PTP_CALLBACK_ENVIRON  pcbe
+    )
+
+    ctypedef PTP_IO (__stdcall *LPFN_CreateThreadpoolIo)(
+        HANDLE                fl,
+        PTP_WIN32_IO_CALLBACK pfnio,
+        PVOID                 pv,
+        PTP_CALLBACK_ENVIRON  pcbe
+    )'''
+
 #===============================================================================
 # Globals
 #===============================================================================
 DECLSPEC = re.compile('DECLSPEC_[^ ]+ ')
+STDCALL = re.compile('(WINAPI|CALLBACK|NTAPI|PASCAL)')
+IN_OUT = re.compile('('
+    '_Reserved_|'
+    '_Inout_opt_|'
+    '_Out_opt_|'
+    '_In_opt_|'
+    '_Inout_|'
+    '_Out_|'
+    '_In_'
+    ')'
+)
 
 #===============================================================================
 # Helpers
@@ -127,7 +161,6 @@ def convert_windows_typedef_to_cython_ctypedef(text=None, indent_output=True):
 
     new_lines = [ first_line, ]
     saw_ifdef = False
-    import ipdb
     for line in lines[1:-1]:
         if 'union {' in line:
             continue
@@ -180,6 +213,91 @@ def convert_windows_typedef_to_cython_ctypedef(text=None, indent_output=True):
     else:
         sep = '\n'
     output = sep.join(new_lines)
+    if from_clipboard:
+        cb(output)
+    return output
+
+def convert_windows_funcdef_to_cython_funcdef(text=None, indent_output=True):
+    """
+    >>> func = convert_windows_funcdef_to_cython_funcdef
+    >>> text = WINDOWS_CreateThreadpoolIo
+    >>> func(text) == CYTHON_CreateThreadpoolIo
+    True
+    """
+    from_clipboard = False
+
+    if not text:
+        text = cb()
+        from_clipboard = True
+
+    lines = text.splitlines()
+
+    first_line = STDCALL.sub('__stdcall', lines[0])
+
+    first_line = (
+        first_line.replace('VOID', 'void')
+    )
+
+    new_lines = [ first_line, ]
+    for line in lines[1:-1]:
+        line = IN_OUT.sub('', line)
+        line = line.strip()
+        if not line:
+            continue
+        line = '    %s' % line
+        new_lines.append(line)
+
+    if indent_output:
+        indent = '    '
+        sep = '\n%s' % '    '
+        new_lines[0] = '    %s' % new_lines[0]
+    else:
+        sep = '\n'
+        indent = ''
+
+    last_param_index = len(new_lines)-1
+
+    output_lines = [
+        sep.join(new_lines),
+        '\n%s)' % indent,
+        '\n\n'
+    ]
+
+    first_words = first_line.split(' ')
+    if len(first_words) == 3:
+        (return_type, calling_convention, funcname) = (
+            first_words[0],
+            first_words[1] + ' ',
+            first_words[2].replace('(', '')
+        )
+    else:
+        (return_type, calling_convention, funcname) = (
+            first_words[0],
+            '',
+            first_words[1].replace('(', '')
+        )
+
+    lpfn_funcdef = '%sctypedef %s (%s*LPFN_%s)(' % (
+        indent,
+        return_type,
+        calling_convention,
+        funcname,
+    )
+
+    lpfn_params = sep.join(new_lines[1:last_param_index+1])
+    lpfn_lines = [
+        lpfn_funcdef,
+        sep,
+        lpfn_params,
+        '\n',
+        '%s)' % indent
+    ]
+
+    output = ''.join((
+        ''.join(output_lines),
+        ''.join(lpfn_lines),
+    ))
+
     if from_clipboard:
         cb(output)
     return output

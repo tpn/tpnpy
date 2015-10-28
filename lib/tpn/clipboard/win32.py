@@ -41,5 +41,6 @@ def cb(text=None, fmt=CF_UNICODETEXT, cls=unicode_class, out=None):
     if not out:
         out = lambda m: sys.stdout.write(m + '\n')
     out("copied %d characters into clipboard..." % len(data))
+    return data
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et                                             :

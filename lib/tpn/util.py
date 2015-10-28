@@ -93,6 +93,12 @@ is_cygwin = (sys.platform == 'cygwin')
 #===============================================================================
 # Helper Methods
 #===============================================================================
+def bytes_to_eb(b):
+    return '%0.1f PB' % (float(b)/1024.0/1024.0/1024.0/1024.0/1024.0/1024.0)
+
+def bytes_to_pb(b):
+    return '%0.1f PB' % (float(b)/1024.0/1024.0/1024.0/1024.0/1024.0)
+
 def bytes_to_tb(b):
     return '%0.1f TB' % (float(b)/1024.0/1024.0/1024.0/1024.0)
 
@@ -104,6 +110,27 @@ def bytes_to_mb(b):
 
 def bytes_to_kb(b):
     return '%0.1f KB' % (float(b)/1024.0)
+
+def bytes_to_b(b):
+    return '%d B' % b
+
+bytes_conv_table = [
+    bytes_to_b,
+    bytes_to_kb,
+    bytes_to_mb,
+    bytes_to_gb,
+    bytes_to_tb,
+    bytes_to_pb,
+    bytes_to_eb,
+]
+
+def bytes_to_human(b):
+    n = int(b)
+    i = 0
+    while n >> 10:
+        n >>= 10
+        i += 1
+    return bytes_conv_table[i](b)
 
 def lower(l):
     return [ s.lower() for s in l ]
@@ -332,6 +359,22 @@ def cr_to_crlf(text):
     # Just in case it's already \r\n:
     text = text.replace('\r\r', '\r')
     return text
+
+def dedent(text, size=4):
+    prefix = ' ' * size
+    lines = text.splitlines()
+    ix = len(lines[0])
+    sep = '\r\n' if text[ix-1:ix+1] == '\r\n' else '\n'
+    pattern = re.compile('^%s' % prefix)
+    return sep.join(pattern.sub('', line) for line in lines)
+
+def indent(text, size=4):
+    prefix = ' ' * size
+    lines = text.splitlines()
+    ix = len(lines[0])
+    sep = '\r\n' if text[ix-1:ix+1] == '\r\n' else '\n'
+    pattern = re.compile('^')
+    return sep.join(pattern.sub(prefix, line) for line in lines)
 
 def clone_dict(d):
     """
@@ -610,6 +653,92 @@ def render_rst_grid(rows, **kwds):
         out.append('\n'.join(footer))
 
     output.write(add_linesep_if_missing('\n'.join(out)))
+
+def bits_table(bits=64):
+
+    k = Dict()
+    k.banner = ('Bits', '(%d-bit)' % bits)
+    k.formats = lambda: chain(
+        (str.ljust, str.center,),
+        (str.rjust, str.rjust,),
+        (str.ljust,),
+        (str.center,)
+    )
+
+    rows = [('2^n', 'Int', 'Size', 'Hex', 'Bin')]
+
+    for i in range(1, bits+1):
+        v = 2 ** i
+        rows.append([
+            '2^%d' % i,
+            str(bits - i),
+            str(int(v)),
+            bytes_to_human(v).replace('.0', ''),
+            '0x%s' % str(hex(v | (1 << bits+4)))[3:],
+            str(bin(v | (1 << bits+1)))[3:],
+        ])
+
+    render_text_table(rows, **k)
+
+def bits_table2(bits=64):
+
+    k = Dict()
+    k.banner = ('Bits', '(%d-bit)' % bits)
+    k.formats = lambda: chain(
+        (str.ljust, str.center,),
+        (str.rjust, str.rjust,),
+        (str.ljust,),
+        (str.center,)
+    )
+
+    rows = [('2^n', '%d-n' % bits, 'Int', 'Size', 'Hex', 'Bin')]
+
+    for i in range(1, bits+1):
+        v = 2 ** i
+        rows.append([
+            '2^%d-1' % i,
+            ' ',
+            ' ', #str(int(v-1)),
+            ' ', #bytes_to_human(v-1).replace('.0', ''),
+            '0x%s' % str(hex((v-1) | (1 << bits+4)))[3:],
+            str(bin((v-1) | (1 << bits+1)))[3:],
+        ])
+        rows.append([
+            '2^%d' % i,
+            str(bits - i),
+            str(int(v)),
+            bytes_to_human(v).replace('.0', ''),
+            '0x%s' % str(hex(v | (1 << bits+4)))[3:],
+            str(bin(v | (1 << bits+1)))[3:],
+        ])
+
+    render_text_table(rows, **k)
+
+def bits_table3(bits=64):
+
+    k = Dict()
+    k.banner = ('Bits', '(%d-bit)' % bits)
+    k.formats = lambda: chain(
+        (str.ljust, str.center,),
+        (str.rjust, str.rjust,),
+        (str.ljust,),
+        (str.center,)
+    )
+
+    rows = [('2^n-1', 'Int', 'Size', 'Hex', 'Bin')]
+
+    for i in range(1, bits+1):
+        v = (2 ** i)-1
+        rows.append([
+            '2^%d-1' % i,
+            str(int(v)),
+            bytes_to_human(v).replace('.0', ''),
+            '0x%s' % str(hex(v | (1 << bits+4)))[3:],
+            str(bin(v | (1 << bits+1)))[3:],
+        ])
+
+    render_text_table(rows, **k)
+
 
 def literal_eval(v):
     try:

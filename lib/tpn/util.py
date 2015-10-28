@@ -132,6 +132,20 @@ def bytes_to_human(b):
         i += 1
     return bytes_conv_table[i](b)
 
+def hex_zfill(h, bits=64):
+    s = str(hex(h | (1 << bits+4)))[3:]
+    div = (bits >> 3)
+    high = s[:div]
+    low = s[div:]
+    return '0x%s`%s' % (high, low)
+
+def bin_zfill(h, bits=64):
+    s = str(bin(h | (1 << bits+1)))[3:]
+    div = (bits >> 1)
+    high = s[:div]
+    low = s[div:]
+    return '0b%s`%s' % (high, low)
+
 def lower(l):
     return [ s.lower() for s in l ]
 
@@ -661,10 +675,10 @@ def bits_table(bits=64):
     k.formats = lambda: chain(
         (str.ljust, str.center,),
         (str.rjust, str.rjust,),
-        (str.ljust,),
+        (str.ljust, str.center),
     )
 
-    rows = [('2^n', 'Int', 'Size', 'Hex', 'Bin')]
+    rows = [('2^n', '%d-n' % bits, 'Int', 'Size', 'Hex', 'Bin')]
 
     for i in range(1, bits+1):
         v = 2 ** i
@@ -673,8 +687,8 @@ def bits_table(bits=64):
             str(bits - i),
             str(int(v)),
             bytes_to_human(v).replace('.0', ''),
-            '0x%s' % str(hex(v | (1 << bits+4)))[3:],
-            str(bin(v | (1 << bits+1)))[3:],
+            hex_zfill(v),
+            bin_zfill(v),
         ])
 
     render_text_table(rows, **k)
@@ -699,16 +713,16 @@ def bits_table2(bits=64):
             ' ',
             ' ', #str(int(v-1)),
             ' ', #bytes_to_human(v-1).replace('.0', ''),
-            '0x%s' % str(hex((v-1) | (1 << bits+4)))[3:],
-            str(bin((v-1) | (1 << bits+1)))[3:],
+            hex_zfill(v-1),
+            bin_zfill(v-1),
         ])
         rows.append([
             '2^%d' % i,
             str(bits - i),
             str(int(v)),
             bytes_to_human(v).replace('.0', ''),
-            '0x%s' % str(hex(v | (1 << bits+4)))[3:],
-            str(bin(v | (1 << bits+1)))[3:],
+            hex_zfill(v),
+            bin_zfill(v),
         ])
 
     render_text_table(rows, **k)
@@ -731,8 +745,8 @@ def bits_table3(bits=64):
             '2^%d-1' % i,
             str(int(v)),
             bytes_to_human(v).replace('.0', ''),
-            '0x%s' % str(hex(v | (1 << bits+4)))[3:],
-            str(bin(v | (1 << bits+1)))[3:],
+            hex_zfill(v),
+            bin_zfill(v),
         ])
 
     render_text_table(rows, **k)

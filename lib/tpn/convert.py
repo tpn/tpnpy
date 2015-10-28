@@ -259,8 +259,7 @@ def convert_windows_funcdef_to_cython_funcdef(text=None, indent_output=True):
 
     output_lines = [
         sep.join(new_lines),
-        '\n%s)' % indent,
-        '\n\n'
+        '\n%s)\n' % indent,
     ]
 
     first_words = first_line.split(' ')

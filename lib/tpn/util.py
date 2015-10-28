@@ -662,7 +662,6 @@ def bits_table(bits=64):
         (str.ljust, str.center,),
         (str.rjust, str.rjust,),
         (str.ljust,),
-        (str.center,)
     )
 
     rows = [('2^n', 'Int', 'Size', 'Hex', 'Bin')]
@@ -719,10 +718,9 @@ def bits_table3(bits=64):
     k = Dict()
     k.banner = ('Bits', '(%d-bit)' % bits)
     k.formats = lambda: chain(
-        (str.ljust, str.center,),
+        (str.ljust, str.rjust,),
         (str.rjust, str.rjust,),
         (str.ljust,),
-        (str.center,)
     )
 
     rows = [('2^n-1', 'Int', 'Size', 'Hex', 'Bin')]

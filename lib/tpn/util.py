@@ -711,8 +711,8 @@ def bits_table2(bits=64):
         rows.append([
             '2^%d-1' % i,
             ' ',
-            ' ', #str(int(v-1)),
-            ' ', #bytes_to_human(v-1).replace('.0', ''),
+            str(int(v-1)),
+            bytes_to_human(v-1).replace('.0', ''),
             hex_zfill(v-1),
             bin_zfill(v-1),
         ])

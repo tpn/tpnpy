@@ -242,6 +242,7 @@ def convert_windows_funcdef_to_cython_funcdef(text=None, indent_output=True):
     for line in lines[1:-1]:
         line = IN_OUT.sub('', line)
         line = line.strip()
+        line = line.replace('//', '#')
         if not line:
             continue
         line = '    %s' % line

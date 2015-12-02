@@ -214,6 +214,8 @@ class Config(RawConfigParser):
         total = 0
         max_total = 10
         p = self.get(section, name)
+        if not p:
+            return
         while count != 2 and total < max_total:
             count = 0
             total += 1

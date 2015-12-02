@@ -14,6 +14,7 @@ from .util import (
 
 from os.path import (
     isdir,
+    isfile,
     exists,
     abspath,
     dirname,
@@ -453,7 +454,11 @@ class PathInvariant(StringInvariant):
         if self._allow_dash and self.actual == '-':
             return True
 
-        return exists(self.actual)
+        p = abspath(self.actual)
+        if not isfile(p):
+            return False
+
+        return self._try_save(p)
 
 class YMDPathInvariant(PathInvariant):
     def _test(self):

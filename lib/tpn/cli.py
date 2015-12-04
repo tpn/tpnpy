@@ -47,6 +47,10 @@ from .util import (
 from .invariant import (
     Invariant,
 )
+#===============================================================================
+# Globals
+#===============================================================================
+INTERACTIVE = False
 
 #===============================================================================
 # Constants
@@ -211,6 +215,7 @@ class CommandLine:
         except ConfigObjectAlreadyCreated:
             self.conf = get_config()
 
+        self.command.interactive = INTERACTIVE
         self.command.conf = self.conf
         self.command.args = self.args
         self.command.options = self.options
@@ -483,9 +488,17 @@ def extract_command_args_and_kwds(*args_):
     return (args, kwds)
 
 def run(*args_):
+    global INTERACTIVE
+    if len(args_) == 1 and isinstance(args_[0], str):
+        args_ = args_[0].split(' ')
+        INTERACTIVE = True
     (args, kwds) = extract_command_args_and_kwds(*args_)
     tpn.config._clear_config_if_already_created()
-    return CLI(*args, **kwds)
+    cli = CLI(*args, **kwds)
+    if INTERACTIVE:
+        return cli.commandline.command
+    else:
+        return cli
 
 def run_mp(**kwds):
     cli = CLI(**kwds)

@@ -330,4 +330,57 @@ class Config(RawConfigParser):
 
         self.post_load()
 
+    @property
+    @memoize
+    def ptvs_dir(self):
+        return self._absdir('dir', section='ptvs')
+
+    @property
+    @memoize
+    def ptvs_dll_path(self):
+        return join_path(
+            self.ptvs_dir,
+            self.get('ptvs', 'dll_path'),
+        )
+
+    @property
+    @memoize
+    def ptvs_debug_dll_path(self):
+        return join_path(
+            self.ptvs_dir,
+            self.get('ptvs', 'debug_dll_path'),
+        )
+
+    @property
+    @memoize
+    def ptvs_custom_dir(self):
+        return self._absdir('custom_dir', section='ptvs')
+
+    @property
+    @memoize
+    def ptvs_custom_dll_path(self):
+        custom_dir = self.ptvs_custom_dir
+        if not custom_dir:
+            return
+        return join_path(
+            self.ptvs_custom_dir,
+            self.get('ptvs', 'custom_dll_path'),
+        )
+
+    @property
+    @memoize
+    def ptvs_custom_debug_dll_path(self):
+        custom_dir = self.ptvs_custom_dir
+        if not custom_dir:
+            return
+        return join_path(
+            self.ptvs_custom_dir,
+            self.get('ptvs', 'custom_debug_dll_path'),
+        )
+
+    @property
+    @memoize
+    def ptvs_python_exe(self):
+        return self.get('ptvs', 'python_exe') or sys.executable
+
 # vim:set ts=8 sw=4 sts=4 tw=78 et:

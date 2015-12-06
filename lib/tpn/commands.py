@@ -157,6 +157,12 @@ class VsProfileProgram(InvariantAwareCommand):
         _mandatory = False
         _default = False
 
+    trace = None
+    class TraceArg(BoolInvariant):
+        _help = "Enable tracing (instead of profiling)."
+        _mandatory = False
+        _default = False
+
     custom_profiler_dll = None
     class CustomProfilerDllArg(PathInvariant):
         _help = (
@@ -238,9 +244,13 @@ class VsProfileProgram(InvariantAwareCommand):
             sys.stdout.flush()
             msvcrt.getch()
 
+        import os
+        env = os.environ
+        if self.options.trace:
+            env['VSPYPROF_TRACE'] = '1'
+
         import subprocess
         with chdir(this_dir):
-
-            subprocess.call(cmd)
+            subprocess.call(cmd, env=env)
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et                                             :

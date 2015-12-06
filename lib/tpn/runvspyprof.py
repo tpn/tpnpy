@@ -14,7 +14,7 @@ if sys.platform == 'cli':
 import os
 import vspyprof
 
-# arguments are path to profiling DLL, working dir, custom profile DLL or -, 
+# arguments are path to profiling DLL, working dir, custom profile DLL or -,
 # normal arguments which should include a filename to execute
 
 # change to directory we expected to start from

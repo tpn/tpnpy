@@ -249,6 +249,8 @@ class VsProfileProgram(InvariantAwareCommand):
         if self.options.trace:
             env['VSPYPROF_TRACE'] = '1'
 
+        env['VSPYPROF_DEBUGBREAK_ON_START'] = '1'
+
         import subprocess
         with chdir(this_dir):
             subprocess.call(cmd, env=env)

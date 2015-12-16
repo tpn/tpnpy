@@ -82,18 +82,29 @@ def profile(file, globals_obj, locals_obj, profdll, custprofdllname=None):
     pyprofdll.CloseProfiler.argtypes = [ctypes.c_void_p]
     pyprofdll.InitProfiler.argtypes = [ctypes.c_void_p]
     pyprofdll.InitProfiler.restype = ctypes.c_void_p
+    pyprofdll.SetTracing.argtypes = [ctypes.c_void_p]
+    pyprofdll.UnsetTracing.argtypes = [ctypes.c_void_p]
+    pyprofdll.IsTracing.argtypes = [ctypes.c_void_p]
+    pyprofdll.IsTracing.restype = ctypes.c_bool
+    pyprofdll.Debugbreak
 
     if custprofhandle:
         profiler = pyprofdll.CreateCustomProfiler(custprofhandle, sys.dllhandle)
     else:
         profiler = pyprofdll.CreateProfiler(sys.dllhandle)
 
+    import pdb
+    pdb.set_trace()
+
+    if 'VSPYPROF_DEBUGBREAK_ON_START' in os.environ:
+        pyprofdll.Debugbreak()
+
+    if 'VSPYPROF_TRACE' in os.environ:
+        pyprofdll.SetTracing(profiler)
+
     if not profiler:
         raise NotImplementedError("Profiling is currently not supported for " + sys.version)
     handle = None
-
-    import pdb
-    pdb.set_trace()
 
     try:
         if sys.version_info[0] >= 3:

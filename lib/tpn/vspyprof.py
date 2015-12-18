@@ -86,6 +86,7 @@ def profile(file, globals_obj, locals_obj, profdll, custprofdllname=None):
     pyprofdll.UnsetTracing.argtypes = [ctypes.c_void_p]
     pyprofdll.IsTracing.argtypes = [ctypes.c_void_p]
     pyprofdll.IsTracing.restype = ctypes.c_bool
+    pyprofdll.Debugbreak
 
     if custprofhandle:
         profiler = pyprofdll.CreateCustomProfiler(custprofhandle, sys.dllhandle)
@@ -94,6 +95,9 @@ def profile(file, globals_obj, locals_obj, profdll, custprofdllname=None):
 
     import pdb
     pdb.set_trace()
+
+    if 'VSPYPROF_DEBUGBREAK_ON_START' in os.environ:
+        pyprofdll.Debugbreak()
 
     if 'VSPYPROF_TRACE' in os.environ:
         pyprofdll.SetTracing(profiler)

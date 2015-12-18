@@ -59,6 +59,19 @@ class WindowsTypedefToCythonCtypedefFromClipboard(Command):
         output = convert_windows_typedef_to_cython_ctypedef()
         self._out(output)
 
+class WindowsTypedefToPythonCtypesStructureFromClipboard(Command):
+    """
+    Converts the contents of the clipboard (which is a copy of a Windows header
+    typedef) into the Cython ctypedef representation, then replace the clipboard
+    with that entry.
+    """
+    _shortname_ = 'wtcs'
+    def run(self):
+        from .convert import convert_windows_typedef_to_python_ctypes_structure
+        output = convert_windows_typedef_to_python_ctypes_structure()
+        self._out(output)
+
+
 class WindowsFuncdefToCythonFuncdefFromClipboard(Command):
     """
     Converts the contents of the clipboard (which is a copy of a Windows header

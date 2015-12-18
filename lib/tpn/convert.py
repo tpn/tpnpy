@@ -34,6 +34,25 @@ CTYPEDEF_RIO_NOTIFICATION_COMPLETION = '''\
         PVOID  Overlapped
     ctypedef RIO_NOTIFICATION_COMPLETION *PRIO_NOTIFICATION_COMPLETION'''
 
+TYPEDEF_FILE_STANDARD_INFO = '''\
+typedef struct _FILE_STANDARD_INFO {
+    LARGE_INTEGER AllocationSize;
+    LARGE_INTEGER EndOfFile;
+    DWORD NumberOfLinks;
+    BOOLEAN DeletePending;
+    BOOLEAN Directory;
+} FILE_STANDARD_INFO, *PFILE_STANDARD_INFO;'''
+
+PYTHON_CTYPES_FILE_STANDARD_INFO_FORMAT = '''\
+    class FILE_STANDARD_INFO(Structure):
+        _fields_ = [
+            ('AllocationSize', LARGE_INTEGER),
+            ('EndOfFile', LARGE_INTEGER),
+            ('NumberOfLinks', DWORD),
+            ('DeletePending', BOOLEAN),
+            ('Directory', BOOLEAN),
+        ]'''
+
 TYPEDEF_XSAVE_FORMAT = '''\
 typedef struct DECLSPEC_ALIGN(16) _XSAVE_FORMAT {
     USHORT ControlWord;
@@ -213,6 +232,99 @@ def convert_windows_typedef_to_cython_ctypedef(text=None, indent_output=True):
     else:
         sep = '\n'
     output = sep.join(new_lines)
+    if from_clipboard:
+        cb(output)
+    return output
+
+def convert_windows_typedef_to_python_ctypes_structure(
+    text=None,
+    indent_output=False
+):
+    """
+    >>> func = convert_windows_typedef_to_cython_ctypedef
+    >>> text = TYPEDEF_FILE_STANDARD_INFO
+    >>> func(text) == PYTHON_CTYPES_FILE_STANDARD_INFO_FORMAT
+    True
+    """
+    from_clipboard = False
+
+    if not text:
+        text = cb()
+        from_clipboard = True
+
+    lines = text.splitlines()
+
+    first_line = DECLSPEC.sub('', lines[0])
+
+    first_line = (
+        first_line.replace('typedef', 'class')
+                  .replace('struct _', '(Structure): ')
+                  .replace('union _', '(Union): ')
+                  .replace(' {', '')
+    )
+
+    tokens = first_line.split(' ')
+    if len(tokens) == 3:
+        (classtoken, typetoken, typename) = tokens
+    else:
+        raise NotImplementedError
+
+    first_line = '%s %s%s' % (classtoken, typename, typetoken)
+    new_lines = [
+        first_line,
+        '    _fields_ = [',
+    ]
+    saw_ifdef = False
+    for line in lines[1:-1]:
+        if 'union {' in line:
+            continue
+        if 'struct {' in line:
+            continue
+        if 'DUMMY' in line:
+            continue
+        if '}' in line:
+            continue
+        if line == '#if defined(_WIN64)':
+            line = "IF UNAME_MACHINE[-2:] == 'x64':"
+            saw_ifdef = True
+            new_lines.append(line)
+            continue
+        elif line == '#else':
+            if saw_ifdef:
+                new_lines.append('ELSE:')
+            continue
+        elif line == '#endif':
+            if saw_ifdef:
+                saw_ifdef = False
+                continue
+
+        line = line.replace(';', '') \
+                   .replace(',', '')
+        line = DECLSPEC.sub('', line)
+        # Strip off bit fields
+        ix = line.find(':')
+        if ix != -1:
+            line = line[:ix]
+        #ipdb.set_trace()
+        line = line.strip()
+        while line.find('  ') != -1:
+            line = line.replace('  ', ' ')
+        if not line:
+            continue
+        elif not line.startswith(('IF', 'ELSE', 'ELIF')):
+            tokens = line.split(' ')
+            line = "        ('%s', %s)," % (tokens[1], tokens[0])
+        new_lines.append(line)
+
+    new_lines.append('    ]')
+
+    if indent_output:
+        sep = '\n    '
+        new_lines[0] = '    %s' % new_lines[0]
+    else:
+        sep = '\n'
+    output = sep.join(new_lines)
+
     if from_clipboard:
         cb(output)
     return output

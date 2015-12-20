@@ -4,25 +4,43 @@
 import sys
 import ctypes
 
-from ctypes import *
-from ctypes.wintypes import *
+from .wintypes import *
 
 #===============================================================================
 # Globals/Aliases
 #===============================================================================
-PVOID = c_void_p
-PCWSTR = c_wchar_p
 
 #===============================================================================
 # Classes
 #===============================================================================
-class GUID(Structure):
+class TRACE_STORE_METADATA(Structure):
     _fields_ = [
-        ('Data1',   LONG),
-        ('Data2',   SHORT),
-        ('Data3',   SHORT),
-        ('Data4',   BYTE * 8),
+        ('NumberOfRecords', ULARGE_INTEGER),
+        ('RecordSize', LARGE_INTEGER),
     ]
+
+PTRACE_STORE_METADATA = POINTER(TRACE_STORE_METADATA)
+
+class _TRACE_STORE_METADATA(Union):
+    _fields_ = [
+        ('Metadata', TRACE_STORE_METADATA),
+        ('pMetadata', PTRACE_STORE_METADATA),
+    ]
+
+class TRACE_STORE(Structure):
+    _fields_ = [
+        ('FileHandle', HANDLE),
+        ('MappingHandle', HANDLE),
+        ('MappingSize', LARGE_INTEGER),
+        ('FileInfo', FILE_STANDARD_INFO),
+        ('CriticalSection', PCRITICAL_SECTION),
+        ('BaseAddress', PVOID),
+        ('NextAddress', PVOID),
+        ('MetadataStore', PVOID),
+        ('AllocateRecords', PVOID),
+        ('', _TRACE_STORE_METADATA),
+    ]
+PTRACE_STORE = POINTER(TRACE_STORE)
 
 class TRACE_SESSION(Structure):
     _fields_ = [
@@ -35,6 +53,7 @@ class TRACE_SESSION(Structure):
         ('DomainName',      PCWSTR),
         ('SystemTime',      FILETIME),
     ]
+PTRACE_SESSION = POINTER(TRACE_SESSION)
 
 class TRACE_CONTEXT(Structure):
     _fields_ = [
@@ -43,7 +62,7 @@ class TRACE_CONTEXT(Structure):
         ('TraceStores',     PVOID),
         ('TraceCallback',   PVOID),
     ]
-
+PTRACE_CONTEXT = POINTER(TRACE_CONTEXT)
 
 #===============================================================================
 # Functions
@@ -74,6 +93,43 @@ def pytrace(path=None, dll=None):
 
     dll.CreateTracer.restype = PVOID
     dll.CreateTracer.argtypes = [PVOID, PVOID]
+
+    dll.InitializeTraceStores.restype = BOOL
+    dll.InitializeTraceStores.argtypes = [
+        PWSTR,
+        PVOID,
+        PDWORD,
+        PDWORD,
+    ]
+
+    return dll
+
+def tracer(path=None, dll=None):
+    assert path or dll
+    if not dll:
+        dll = ctypes.PyDLL(path)
+
+    dll.InitializeTraceStores.restype = BOOL
+    dll.InitializeTraceStores.argtypes = [
+        PWSTR,
+        PVOID,
+        PDWORD,
+        PDWORD,
+    ]
+
+    dll.InitializeTraceContext.restype = BOOL
+    dll.InitializeTraceContext.argtypes = [
+        PTRACE_CONTEXT,
+        PDWORD,
+        PTRACE_SESSION,
+        PVOID,
+    ]
+
+    dll.CallSystemTimer.restype = BOOL
+    dll.CallSystemTimer.argtypes = [
+        PFILETIME,
+        PVOID,
+    ]
 
     return dll
 

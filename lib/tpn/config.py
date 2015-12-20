@@ -383,4 +383,30 @@ class Config(RawConfigParser):
     def ptvs_python_exe(self):
         return self.get('ptvs', 'python_exe') or sys.executable
 
+    @property
+    @memoize
+    def tracer_dir(self):
+        return self._absdir('dir', section='tracer')
+
+    @property
+    @memoize
+    def tracer_dll_path(self):
+        return join_path(
+            self.tracer_dir,
+            self.get('tracer', 'dll_path'),
+        )
+
+    @property
+    @memoize
+    def tracer_debug_dll_path(self):
+        return join_path(
+            self.tracer_dir,
+            self.get('tracer', 'debug_dll_path'),
+        )
+
+    @property
+    @memoize
+    def tracer_python_exe(self):
+        return self.get('tracer', 'python_exe') or sys.executable
+
 # vim:set ts=8 sw=4 sts=4 tw=78 et:

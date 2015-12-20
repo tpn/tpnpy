@@ -343,54 +343,31 @@ class TestVsPyProfTraceStores(InvariantAwareCommand):
     class BaseDirArg(DirectoryInvariant):
         _help = "Base directory to pass to tracer"
 
+    dll = None
+
     def run(self):
         InvariantAwareCommand.run(self)
 
         conf = self.conf
-        dll = self.options.profiler_dll
-        if not dll:
+        dllpath = self.options.profiler_dll
+        if not dllpath:
             if self.options.use_debug_dlls:
-                dll = conf.ptvs_debug_dll_path
+                dllpath = conf.ptvs_debug_dll_path
             else:
-                dll = conf.ptvs_dll_path
-
-        custdll = self.options.custom_profiler_dll
-        if not custdll:
-            if self.options.use_debug_dlls:
-                custdll = conf.ptvs_custom_debug_dll_path
-            else:
-                custdll = conf.ptvs_custom_dll_path
-        self._verbose("Using profiler DLL: %s" % dll)
-        if custdll:
-            self._verbose("Using custom profiler DLL: %s" % custdll)
-        else:
-            custdll = '-'
-        from . import vspyprof
-
-        from .util import chdir
-        from .path import join_path
-        from os.path import dirname
-
-        import sys
+                dllpath = conf.ptvs_dll_path
 
         import ctypes
-        kernel32 = ctypes.windll.kernel32
-        self._verbose("Current process ID: %d" % kernel32.GetCurrentProcessId())
+        from .wintypes import DWORD
+        from .dll import pytrace
 
-        dllpath = dll
-        dll = ctypes.windll.LoadLibrary(dllpath)
-
-        dll.InitializeTraceStores.argtypes = [
-            ctypes.c_wchar_p,
-            ctypes.c_void_p,
-            ctypes.c_void_p,
-        ]
-        dll.InitializeTraceStores.restype = ctypes.c_bool
+        dll = pytrace(path=dllpath)
 
         basedir = ctypes.c_wchar_p(self._base_dir)
+
         size = dll.GetTraceStoresAllocationSize()
         stores = ctypes.create_string_buffer(size)
 
+        import pdb
         if self.options.pause_before_starting:
             dll.Debugbreak()
             import pdb
@@ -399,7 +376,15 @@ class TestVsPyProfTraceStores(InvariantAwareCommand):
         dll.InitializeTraceStores(
             basedir,
             ctypes.pointer(stores),
+            ctypes.byref(size),
             ctypes.c_void_p(0),
         )
+
+        import ipdb
+        ipdb.set_trace()
+        self.dll = dll
+
+
+
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et                                             :

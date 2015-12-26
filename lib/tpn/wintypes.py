@@ -10,6 +10,7 @@ from ctypes.wintypes import *
 #===============================================================================
 # Globals/Aliases
 #===============================================================================
+PULONG = POINTER(ULONG)
 PVOID = c_void_p
 PWSTR = c_wchar_p
 PCWSTR = c_wchar_p
@@ -40,6 +41,16 @@ class CRITICAL_SECTION(Structure):
     _fields_ = []
 
 PCRITICAL_SECTION = POINTER(CRITICAL_SECTION)
+
+class UNICODE_STRING(Structure):
+    _fields_ = [
+        ('Length', USHORT),
+        ('MaximumLength', USHORT),
+        ('Buffer', PWSTR),
+    ]
+
+PUNICODE_STRING = POINTER(UNICODE_STRING)
+PPUNICODE_STRING = POINTER(PUNICODE_STRING)
 
 #===============================================================================
 # Functions

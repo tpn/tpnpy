@@ -9,6 +9,9 @@ from .wintypes import *
 #===============================================================================
 # Globals/Aliases
 #===============================================================================
+PPYTHON = PVOID
+PPYTRACEFUNC = PVOID
+PUSERDATA = PVOID
 
 #===============================================================================
 # Classes
@@ -35,12 +38,30 @@ class TRACE_STORE(Structure):
         ('FileInfo', FILE_STANDARD_INFO),
         ('CriticalSection', PCRITICAL_SECTION),
         ('BaseAddress', PVOID),
+        ('PrevAddress', PVOID),
         ('NextAddress', PVOID),
         ('MetadataStore', PVOID),
         ('AllocateRecords', PVOID),
         ('', _TRACE_STORE_METADATA),
     ]
 PTRACE_STORE = POINTER(TRACE_STORE)
+
+class TRACE_STORES(Structure):
+    _fields_ = [
+        ('Events',              TRACE_STORE),
+        ('Frames',              TRACE_STORE),
+        ('Modules',             TRACE_STORE),
+        ('Functions',           TRACE_STORE),
+        ('Exceptions',          TRACE_STORE),
+        ('Lines',               TRACE_STORE),
+        ('EventsMetadata',      TRACE_STORE),
+        ('FramesMetadata',      TRACE_STORE),
+        ('ModulesMetadata',     TRACE_STORE),
+        ('FunctionsMetadata',   TRACE_STORE),
+        ('ExceptionsMetadata',  TRACE_STORE),
+        ('LinesMetadata',       TRACE_STORE),
+    ]
+PTRACE_STORES = POINTER(TRACE_STORES)
 
 class TRACE_SESSION(Structure):
     _fields_ = [
@@ -57,12 +78,24 @@ PTRACE_SESSION = POINTER(TRACE_SESSION)
 
 class TRACE_CONTEXT(Structure):
     _fields_ = [
-        ('Size',            DWORD),
-        ('TraceSession',    POINTER(TRACE_SESSION)),
-        ('TraceStores',     PVOID),
-        ('TraceCallback',   PVOID),
+        ('Size',                ULONG),
+        ('SequenceId',          ULONG),
+        ('TraceSession',        POINTER(TRACE_SESSION)),
+        ('TraceStores',         POINTER(TRACE_STORES)),
+        ('SystemTimerFunction', PVOID),
+        ('UserData',            PVOID),
     ]
 PTRACE_CONTEXT = POINTER(TRACE_CONTEXT)
+
+class PYTHON_TRACE_CONTEXT(Structure):
+    _fields_ = [
+        ('Size',                    ULONG),
+        ('Python',                  PPYTHON),
+        ('TraceContext',            PTRACE_CONTEXT),
+        ('PythonTraceFunction',     PVOID),
+        ('UserData',                PVOID),
+    ]
+PPYTHON_TRACE_CONTEXT = POINTER(PYTHON_TRACE_CONTEXT)
 
 #===============================================================================
 # Functions
@@ -122,14 +155,58 @@ def tracer(path=None, dll=None):
         PTRACE_CONTEXT,
         PDWORD,
         PTRACE_SESSION,
+        PTRACE_STORES,
         PVOID,
     ]
 
-    dll.CallSystemTimer.restype = BOOL
-    dll.CallSystemTimer.argtypes = [
-        PFILETIME,
-        PVOID,
+    dll.InitializeTraceSession.restype = BOOL
+    dll.InitializeTraceSession.argtypes = [
+        PTRACE_SESSION,
+        PDWORD
     ]
+
+    #dll.CallSystemTimer.restype = BOOL
+    #dll.CallSystemTimer.argtypes = [
+    #    PFILETIME,
+    #    PVOID,
+    #]
+
+    return dll
+
+def python(path=None, dll=None):
+    assert path or dll
+    if not dll:
+        dll = ctypes.PyDLL(path)
+
+    dll.InitializePython.restype = BOOL
+    dll.InitializePython.argtypes = [
+        HMODULE,
+        PVOID,
+        PDWORD
+    ]
+
+    return dll
+
+def pythontracer(path=None, dll=None):
+    assert path or dll
+    if not dll:
+        dll = ctypes.PyDLL(path)
+
+    dll.InitializePythonTraceContext.restype = BOOL
+    dll.InitializePythonTraceContext.argtypes = [
+        PPYTHON_TRACE_CONTEXT,
+        PULONG,
+        PPYTHON,
+        PTRACE_CONTEXT,
+        PPYTRACEFUNC,
+        PUSERDATA
+    ]
+
+    dll.StartTracing.restype = BOOL
+    dll.StartTracing.argtypes = [ PPYTHON_TRACE_CONTEXT, ]
+
+    dll.StopTracing.restype = BOOL
+    dll.StopTracing.argtypes = [ PPYTHON_TRACE_CONTEXT, ]
 
     return dll
 

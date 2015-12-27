@@ -409,4 +409,37 @@ class Config(RawConfigParser):
     def tracer_python_exe(self):
         return self.get('tracer', 'python_exe') or sys.executable
 
+    @property
+    @memoize
+    def tracer_python_dll_path(self):
+        return join_path(
+            self.tracer_dir,
+            self.get('tracer', 'tracer_python_dll_path'),
+        )
+
+    @property
+    @memoize
+    def tracer_python_debug_dll_path(self):
+        return join_path(
+            self.tracer_dir,
+            self.get('tracer', 'tracer_python_debug_dll_path'),
+        )
+
+    @property
+    @memoize
+    def tracer_pythontracer_dll_path(self):
+        return join_path(
+            self.tracer_dir,
+            self.get('tracer', 'tracer_pythontracer_dll_path'),
+        )
+
+    @property
+    @memoize
+    def tracer_pythontracer_debug_dll_path(self):
+        return join_path(
+            self.tracer_dir,
+            self.get('tracer', 'tracer_pythontracer_debug_dll_path'),
+        )
+
+
 # vim:set ts=8 sw=4 sts=4 tw=78 et:

@@ -30,16 +30,30 @@ class _TRACE_STORE_METADATA(Union):
         ('pMetadata', PTRACE_STORE_METADATA),
     ]
 
+class TRACE_STORE_MEMORY_MAP(Structure):
+    _fields_ = [
+        ('SlimReadWriteLock',   SRWLOCK),
+        ('MappingHandle',       HANDLE),
+        ('MappingSize',         LARGE_INTEGER),
+        ('BaseAddress',         PVOID),
+        ('ExtendAtAddress',     PVOID),
+        ('EndAddress',          PVOID),
+        ('PrevAddress',         PVOID),
+        ('NextAddress',         PVOID),
+    ]
+PTRACE_STORE_MEMORY_MAP = POINTER(TRACE_STORE_MEMORY_MAP)
+
 class TRACE_STORE(Structure):
     _fields_ = [
+        ('TraceStores', PVOID),
         ('FileHandle', HANDLE),
-        ('MappingHandle', HANDLE),
-        ('MappingSize', LARGE_INTEGER),
+        ('InitialSize', LARGE_INTEGER),
+        ('ExtensionSize', LARGE_INTEGER),
         ('FileInfo', FILE_STANDARD_INFO),
         ('CriticalSection', PCRITICAL_SECTION),
-        ('BaseAddress', PVOID),
-        ('PrevAddress', PVOID),
-        ('NextAddress', PVOID),
+        ('DroppedRecords', ULONG),
+        ('MemoryMap', TRACE_STORE_MEMORY_MAP),
+        ('NextMemoryMap', TRACE_STORE_MEMORY_MAP),
         ('MetadataStore', PVOID),
         ('AllocateRecords', PVOID),
         ('', _TRACE_STORE_METADATA),
@@ -48,6 +62,9 @@ PTRACE_STORE = POINTER(TRACE_STORE)
 
 class TRACE_STORES(Structure):
     _fields_ = [
+        ('Size',                USHORT),
+        ('NumberOfTraceStores', USHORT),
+        ('Reserved',            ULONG),
         ('Events',              TRACE_STORE),
         ('Frames',              TRACE_STORE),
         ('Modules',             TRACE_STORE),

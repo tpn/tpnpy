@@ -386,14 +386,19 @@ class Config(RawConfigParser):
     @property
     @memoize
     def tracer_dir(self):
-        return self._absdir('dir', section='tracer')
+        return self._absdir('tracer_dir', section='tracer')
+
+    @property
+    @memoize
+    def tracer_python_exe(self):
+        return self.get('tracer', 'python_exe') or sys.executable
 
     @property
     @memoize
     def tracer_dll_path(self):
         return join_path(
             self.tracer_dir,
-            self.get('tracer', 'dll_path'),
+            self.get('tracer', 'tracer_dll_path'),
         )
 
     @property
@@ -401,13 +406,24 @@ class Config(RawConfigParser):
     def tracer_debug_dll_path(self):
         return join_path(
             self.tracer_dir,
-            self.get('tracer', 'debug_dll_path'),
+            self.get('tracer', 'tracer_debug_dll_path'),
         )
 
     @property
     @memoize
-    def tracer_python_exe(self):
-        return self.get('tracer', 'python_exe') or sys.executable
+    def tracer_rtl_dll_path(self):
+        return join_path(
+            self.tracer_dir,
+            self.get('tracer', 'tracer_rtl_dll_path'),
+        )
+
+    @property
+    @memoize
+    def tracer_rtl_debug_dll_path(self):
+        return join_path(
+            self.tracer_dir,
+            self.get('tracer', 'tracer_rtl_debug_dll_path'),
+        )
 
     @property
     @memoize

@@ -117,6 +117,8 @@ class TP_CALLBACK_ENVIRON_V3(Structure):
         ('Size', DWORD),
     ]
 TP_CALLBACK_ENVIRON = TP_CALLBACK_ENVIRON_V3
+PTP_CALLBACK_ENVIRON_V3 = POINTER(TP_CALLBACK_ENVIRON_V3)
+PTP_CALLBACK_ENVIRON = POINTER(TP_CALLBACK_ENVIRON)
 
 
 #===============================================================================
@@ -136,7 +138,6 @@ kernel32.SetThreadpoolThreadMaximum.argtypes = [ PTP_POOL, DWORD ]
 kernel32.CloseThreadpool.restype = VOID
 kernel32.CloseThreadpool.argtypes = [ PTP_POOL, ]
 
-
 #===============================================================================
 # NtDll
 #===============================================================================
@@ -144,6 +145,8 @@ kernel32.CloseThreadpool.argtypes = [ PTP_POOL, ]
 #===============================================================================
 # Functions
 #===============================================================================
+
+# Provide implementations for various Rtl inlined threadpool functions.
 def InitializeThreadpoolEnvironmentV3(CallbackEnviron):
     CallbackEnviron.Version = 3
     CallbackEnviron.CallbackPriority = TP_CALLBACK_PRIORITY_NORMAL
@@ -162,5 +165,8 @@ def SetThreadpoolCallbackCleanupGroup(CallbackEnviron,
 def SetThreadpoolCallbackActivationContext(CallbackEnviron,
                                            ActivationContext):
     CallbackEnviron.ActivationContext = ActivationContext
+
+def SetThreadpoolCallbackPool(CallbackEnviron, Threadpool):
+    CallbackEnviron.Pool = Threadpool
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et                                             :

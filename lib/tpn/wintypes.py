@@ -23,6 +23,7 @@ PDWORD = POINTER(DWORD)
 PFILETIME = POINTER(FILETIME)
 SRWLOCK = PVOID
 TP_VERSION = DWORD
+PTP_WORK = PVOID
 PTP_POOL = PVOID
 PTP_CLEANUP_GROUP = PVOID
 PTP_CLEANUP_GROUP_CANCEL_CALLBACK = PVOID
@@ -33,9 +34,9 @@ PACTIVATION_CONTEXT = PVOID
 # Enums
 #===============================================================================
 TP_CALLBACK_PRIORITY_HIGH = 0
-TP_CALLBACK_PRIORITY_NORMAL = 0
-TP_CALLBACK_PRIORITY_LOW = 0
-TP_CALLBACK_PRIORITY_INVALID = 0
+TP_CALLBACK_PRIORITY_NORMAL = 1
+TP_CALLBACK_PRIORITY_LOW = 2
+TP_CALLBACK_PRIORITY_INVALID = 3
 TP_CALLBACK_PRIORITY_COUNT = TP_CALLBACK_PRIORITY_INVALID
 
 #===============================================================================
@@ -152,9 +153,6 @@ def InitializeThreadpoolEnvironmentV3(CallbackEnviron):
     CallbackEnviron.CallbackPriority = TP_CALLBACK_PRIORITY_NORMAL
     CallbackEnviron.Size = sizeof(TP_CALLBACK_ENVIRON_V3)
 InitializeThreadpoolEnvironment = InitializeThreadpoolEnvironmentV3
-
-def SetThreadpoolCallbackLibrary(CallbackEnviron, Threadpool):
-    CallbackEnviron.Pool = byref(Threadpool)
 
 def SetThreadpoolCallbackCleanupGroup(CallbackEnviron,
                                       CleanupGroup,

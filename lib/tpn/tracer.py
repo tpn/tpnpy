@@ -60,7 +60,7 @@ PTRACE_STORE_MEMORY_MAP = POINTER(TRACE_STORE_MEMORY_MAP)
 
 class TRACE_STORE(Structure):
     _fields_ = [
-        ('TraceStores', PVOID),
+        ('TraceContext', PVOID),
         ('FileHandle', HANDLE),
         ('InitialSize', LARGE_INTEGER),
         ('ExtensionSize', LARGE_INTEGER),
@@ -70,15 +70,16 @@ class TRACE_STORE(Structure):
         ('DroppedRecords', ULONG),
         ('PrefaultFuturePageWork', PTP_WORK),
         ('ExtendFileWork', PTP_WORK),
+        ('FileExtendedEvent', HANDLE),
         ('MemoryMap', TRACE_STORE_MEMORY_MAP),
         ('NextMemoryMap', TRACE_STORE_MEMORY_MAP),
         ('MetadataStore', PVOID),
         ('AllocateRecords', PVOID),
-        ('', _TRACE_STORE_METADATA),
+        ('s', _TRACE_STORE_METADATA),
     ]
 PTRACE_STORE = POINTER(TRACE_STORE)
 
-class TRACE_STORES(Structure):
+class TRACE_STORES_OLD(Structure):
     _fields_ = [
         ('Size',                USHORT),
         ('NumberOfTraceStores', USHORT),
@@ -96,16 +97,16 @@ class TRACE_STORES(Structure):
         ('ExceptionsMetadata',  TRACE_STORE),
         ('LinesMetadata',       TRACE_STORE),
     ]
-PTRACE_STORES = POINTER(TRACE_STORES)
+PTRACE_STORES_OLD = POINTER(TRACE_STORES_OLD)
 
-class TRACE_STORES2(Structure):
+class TRACE_STORES(Structure):
     _fields_ = [
         ('Size',                USHORT),
         ('NumberOfTraceStores', USHORT),
         ('Reserved',            ULONG),
         ('Stores',              TRACE_STORE * 12),
     ]
-PTRACE_STORES2 = POINTER(TRACE_STORES2)
+PTRACE_STORES = POINTER(TRACE_STORES)
 
 class TRACE_SESSION(Structure):
     _fields_ = [
@@ -299,8 +300,6 @@ class Tracer:
         self.trace_stores = TRACE_STORES()
         self.trace_stores_size = ULONG(sizeof(self.trace_stores))
 
-        import ipdb
-        ipdb.set_trace()
         success = self.tracer_dll.InitializeTraceStores(
             self.basedir,
             byref(self.trace_stores),
@@ -337,6 +336,8 @@ class Tracer:
 
         self.threadpool_callback_environment = threadpool_callback_environment
 
+        import ipdb
+        ipdb.set_trace()
         self.trace_context = TRACE_CONTEXT()
         self.trace_context_size = ULONG(sizeof(TRACE_CONTEXT))
         success = self.tracer_dll.InitializeTraceContext(
@@ -345,7 +346,7 @@ class Tracer:
             byref(self.trace_session),
             byref(self.trace_stores),
             byref(self.threadpool_callback_environment),
-            byref(self)
+            None,
         )
 
         global TRACER

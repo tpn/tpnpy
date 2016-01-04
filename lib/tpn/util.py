@@ -668,9 +668,9 @@ def render_rst_grid(rows, **kwds):
 
     output.write(add_linesep_if_missing('\n'.join(out)))
 
-def bits_table(bits=64):
+def bits_table(bits=64, **kwds):
 
-    k = Dict()
+    k = Dict(kwds)
     k.banner = ('Bits', '(%d-bit)' % bits)
     k.formats = lambda: chain(
         (str.ljust, str.center,),

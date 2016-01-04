@@ -2,12 +2,15 @@
 # Imports
 #===============================================================================
 import sys
+from functools import partial
 
 import ctypes
 from ctypes import *
 from ctypes.wintypes import *
 
 from .wintypes import *
+
+from .util import NullObject
 
 from multiprocessing import cpu_count
 
@@ -265,6 +268,27 @@ def pythontracer(path=None, dll=None):
     return dll
 
 #===============================================================================
+# Decorators
+#===============================================================================
+class trace:
+    def __init__(self, func):
+        self.func = func
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self.func
+        return partial(self, obj)
+    def __call__(self, *args, **kw):
+        global TRACER
+        tracer = TRACER
+        if not tracer:
+            tracer = NullObject()
+
+        tracer.start()
+        result = self.func(*args, **kwds)
+        tracer.stop()
+        return result
+
+#===============================================================================
 # Classes
 #===============================================================================
 class TracerError(BaseException):
@@ -294,6 +318,24 @@ class Tracer:
         self.tracer_pythontracer_dll = (
             pythontracer(self.tracer_pythontracer_dll_path)
         )
+
+        # The Python structure is complex; we haven't written a ctypes.Structure
+        # wrapper for it yet.  So, for now, we use a raw buffer instead.
+        self.python_size = ULONG()
+        # Get the size required for the structure first.
+        self.tracer_python_dll.InitializePython(
+            None,
+            None,
+            byref(self.python_size),
+        )
+        self.python = create_string_buffer(self.python_size.value)
+        success = self.tracer_python_dll.InitializePython(
+            sys.dllhandle,
+            byref(self.python),
+            byref(self.python_size),
+        )
+        if not success:
+            raise TracerError("InitializePython() failed")
 
         self.trace_session = TRACE_SESSION.create()
 
@@ -336,8 +378,6 @@ class Tracer:
 
         self.threadpool_callback_environment = threadpool_callback_environment
 
-        import ipdb
-        ipdb.set_trace()
         self.trace_context = TRACE_CONTEXT()
         self.trace_context_size = ULONG(sizeof(TRACE_CONTEXT))
         success = self.tracer_dll.InitializeTraceContext(
@@ -348,6 +388,30 @@ class Tracer:
             byref(self.threadpool_callback_environment),
             None,
         )
+        if not success:
+            kernel32.CloseThreadpool(self.threadpool)
+            self.threadpool = None
+            msg = "InitializeTraceStores() failed"
+            if self.trace_context_size.value != sizeof(self.trace_context):
+                msg = "%s: size mismatch: %d != %d" % (
+                    msg,
+                    self.trace_context_size.value,
+                    sizeof(self.trace_context)
+                )
+            raise TracerError(msg)
+
+        self.python_trace_context = PYTHON_TRACE_CONTEXT()
+        self.python_trace_context_size = ULONG(sizeof(PYTHON_TRACE_CONTEXT))
+        success = self.tracer_pythontracer_dll.InitializePythonTraceContext(
+            byref(self.python_trace_context),
+            byref(self.python_trace_context_size),
+            byref(self.python),
+            byref(self.trace_context),
+            self.tracer_pythontracer_dll.PyTraceCallbackFast,
+            None,
+        )
+        if not success:
+            raise TracerError("InitializePythonTraceContext() failed")
 
         global TRACER
         TRACER = self
@@ -380,4 +444,35 @@ class Tracer:
             conf.tracer_pythontracer_dll_path,
         )
 
-# vim:set ts=8 sw=4 sts=4 tw=80 et                                             :
+    def start(self):
+        dll = self.tracer_pythontracer_dll
+        if not dll.StartTracing(self.python_trace_context):
+            raise TracerError("StartTracing() failed")
+
+    def stop(self):
+        dll = self.tracer_pythontracer_dll
+        if not dll.StopTracing(self.python_trace_context):
+            raise TracerError("StopTracing() failed")
+
+    def start_profiling(self):
+        dll = self.tracer_pythontracer_dll
+        if not dll.StartProfiling(self.python_trace_context):
+            raise TracerError("StartProfiling() failed")
+
+    def stop_profiling(self):
+        dll = self.tracer_pythontracer_dll
+        if not dll.StopProfiling(self.python_trace_context):
+            raise TracerError("StopProfiling() failed")
+
+
+    def close_trace_stores(self):
+        self.tracer_dll.CloseTraceStores(byref(self.trace_stores))
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, *exc_info):
+        self.stop()
+
+# vim:set ts=8 sw=4 sts=4 tw=80 ai et                                          :

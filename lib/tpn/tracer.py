@@ -49,13 +49,13 @@ class _TRACE_STORE_METADATA(Union):
 
 class TRACE_STORE_MEMORY_MAP(Structure):
     _fields_ = [
-        ('SlimReadWriteLock',   SRWLOCK),
+        ('CriticalSection',     CRITICAL_SECTION),
+        ('FileHandle',          HANDLE),
+        ('FileInfo',            FILE_STANDARD_INFO),
+        ('CurrentFilePointer',  LARGE_INTEGER),
         ('MappingHandle',       HANDLE),
         ('MappingSize',         LARGE_INTEGER),
         ('BaseAddress',         PVOID),
-        ('PrefaultAddress',     PVOID),
-        ('ExtendAtAddress',     PVOID),
-        ('EndAddress',          PVOID),
         ('PrevAddress',         PVOID),
         ('NextAddress',         PVOID),
     ]
@@ -64,18 +64,16 @@ PTRACE_STORE_MEMORY_MAP = POINTER(TRACE_STORE_MEMORY_MAP)
 class TRACE_STORE(Structure):
     _fields_ = [
         ('TraceContext', PVOID),
-        ('FileHandle', HANDLE),
         ('InitialSize', LARGE_INTEGER),
         ('ExtensionSize', LARGE_INTEGER),
         ('MaximumSize', LARGE_INTEGER),
-        ('FileInfo', FILE_STANDARD_INFO),
-        ('CriticalSection', PCRITICAL_SECTION),
         ('DroppedRecords', ULONG),
         ('PrefaultFuturePageWork', PTP_WORK),
         ('ExtendFileWork', PTP_WORK),
         ('FileExtendedEvent', HANDLE),
-        ('MemoryMap', TRACE_STORE_MEMORY_MAP),
-        ('NextMemoryMap', TRACE_STORE_MEMORY_MAP),
+        ('TraceStoreMemoryMap', TRACE_STORE_MEMORY_MAP),
+        ('NextTraceStoreMemoryMap', TRACE_STORE_MEMORY_MAP),
+        ('LastTraceStoreMemoryMap', TRACE_STORE_MEMORY_MAP),
         ('MetadataStore', PVOID),
         ('AllocateRecords', PVOID),
         ('s', _TRACE_STORE_METADATA),
@@ -221,6 +219,9 @@ def tracer(path=None, dll=None):
         PTRACE_SESSION,
         PDWORD
     ]
+
+    dll.SubmitTraceStoreFileExtensionThreadpoolWork.restype = None
+    dll.SubmitTraceStoreFileExtensionThreadpoolWork.argtypes = [ PTRACE_STORE, ]
 
     #dll.CallSystemTimer.restype = BOOL
     #dll.CallSystemTimer.argtypes = [

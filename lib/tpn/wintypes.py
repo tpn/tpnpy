@@ -59,8 +59,35 @@ class FILE_STANDARD_INFO(Structure):
         ('Directory', BOOLEAN),
     ]
 
+class LIST_ENTRY(Structure):
+    _fields_ = [
+        ('Flink', PVOID),
+        ('Blink', PVOID),
+    ]
+
+class CRITICAL_SECTION_DEBUG(Structure):
+    _fields_ = [
+        ('Type', WORD),
+        ('CreatorBackTraceIndex', WORD),
+        ('CriticalSection', PVOID),
+        ('ProcessLocksList', LIST_ENTRY),
+        ('EntryCount', DWORD),
+        ('ContentionCount', DWORD),
+        ('Flags', DWORD),
+        ('CreatorBackTraceIndexHigh', WORD),
+        ('SpareWORD', WORD),
+    ]
+PCRITICAL_SECTION_DEBUG = POINTER(CRITICAL_SECTION_DEBUG)
+
 class CRITICAL_SECTION(Structure):
-    _fields_ = []
+    _fields_ = [
+        ('DebugInfo', PCRITICAL_SECTION_DEBUG),
+        ('LockCount', LONG),
+        ('RecursionCount', LONG),
+        ('OwningThread', HANDLE),
+        ('LockSemaphore', HANDLE),
+        ('SpinCount', ULONG_PTR),
+    ]
 PCRITICAL_SECTION = POINTER(CRITICAL_SECTION)
 
 class UNICODE_STRING(Structure):

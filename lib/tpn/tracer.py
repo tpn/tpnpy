@@ -132,13 +132,15 @@ PTRACE_SESSION = POINTER(TRACE_SESSION)
 
 class TRACE_CONTEXT(Structure):
     _fields_ = [
-        ('Size',                ULONG),
-        ('SequenceId',          ULONG),
-        ('TraceSession',        POINTER(TRACE_SESSION)),
-        ('TraceStores',         POINTER(TRACE_STORES)),
-        ('SystemTimerFunction', PVOID),
-        ('UserData',            PVOID),
-        ('ThreadpoolCallbackEnvironment', PTP_CALLBACK_ENVIRON),
+        ('Size',                            ULONG),
+        ('SequenceId',                      ULONG),
+        ('TraceSession',                    POINTER(TRACE_SESSION)),
+        ('TraceStores',                     POINTER(TRACE_STORES)),
+        ('SystemTimerFunction',             PVOID),
+        ('PerformanceCounterFrequency',     LARGE_INTEGER),
+        ('UserData',                        PVOID),
+        ('ThreadpoolCallbackEnvironment',   PTP_CALLBACK_ENVIRON),
+        ('HeapHandle',                      HANDLE),
     ]
 PTRACE_CONTEXT = POINTER(TRACE_CONTEXT)
 
@@ -350,14 +352,24 @@ class Tracer:
             None,
         )
         if not success:
-            msg = "InitializeTraceStores() failed"
             if self.trace_stores_size.value != sizeof(self.trace_stores):
-                msg = "%s: size mismatch: %d != %d" % (
-                    msg,
+                msg = "Warning: TRACE_STORES size mismatch: %d != %d\n" % (
                     self.trace_stores_size.value,
                     sizeof(self.trace_stores)
                 )
-            raise TracerError(msg)
+                sys.stderr.write(msg)
+                self.trace_stores = create_string_buffer(
+                    self.trace_stores_size.value
+                )
+                success = self.tracer_dll.InitializeTraceStores(
+                    self.basedir,
+                    byref(self.trace_stores),
+                    byref(self.trace_stores_size),
+                    None
+                )
+
+            if not success:
+                raise TracerError("InitializeTraceStores() failed")
 
         if not threadpool:
             threadpool = kernel32.CreateThreadpool(None)
@@ -390,16 +402,28 @@ class Tracer:
             None,
         )
         if not success:
-            kernel32.CloseThreadpool(self.threadpool)
-            self.threadpool = None
-            msg = "InitializeTraceStores() failed"
             if self.trace_context_size.value != sizeof(self.trace_context):
-                msg = "%s: size mismatch: %d != %d" % (
-                    msg,
+                msg = "TRACE_CONTEXT size mismatch: %d != %d\n" % (
                     self.trace_context_size.value,
                     sizeof(self.trace_context)
                 )
-            raise TracerError(msg)
+                sys.stderr.write(msg)
+                self.trace_context = create_string_buffer(
+                    self.trace_context_size.value
+                )
+                success = self.tracer_dll.InitializeTraceContext(
+                    byref(self.trace_context),
+                    byref(self.trace_context_size),
+                    byref(self.trace_session),
+                    byref(self.trace_stores),
+                    byref(self.threadpool_callback_environment),
+                    None,
+                )
+
+            if not success:
+                kernel32.CloseThreadpool(self.threadpool)
+                self.threadpool = None
+                raise TracerError("InitializeTraceContext() failed")
 
         self.python_trace_context = PYTHON_TRACE_CONTEXT()
         self.python_trace_context_size = ULONG(sizeof(PYTHON_TRACE_CONTEXT))

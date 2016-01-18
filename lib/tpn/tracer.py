@@ -151,6 +151,7 @@ class PYTHON_TRACE_CONTEXT(Structure):
         ('TraceContext',            PTRACE_CONTEXT),
         ('PythonTraceFunction',     PVOID),
         ('UserData',                PVOID),
+        ('FunctionObject',          PVOID),
     ]
 PPYTHON_TRACE_CONTEXT = POINTER(PYTHON_TRACE_CONTEXT)
 
@@ -262,6 +263,9 @@ def pythontracer(path=None, dll=None):
         PUSERDATA
     ]
 
+    dll.AddFunction.restype = BOOL
+    #dll.AddFunction.argtypes = [ PVOID, ]
+
     dll.StartTracing.restype = BOOL
     dll.StartTracing.argtypes = [ PPYTHON_TRACE_CONTEXT, ]
 
@@ -286,6 +290,7 @@ class trace:
         if not tracer:
             tracer = NullObject()
 
+        tracer.add_function(self.func)
         tracer.start()
         result = self.func(*args, **kwds)
         tracer.stop()
@@ -468,6 +473,11 @@ class Tracer:
             conf.tracer_python_dll_path,
             conf.tracer_pythontracer_dll_path,
         )
+
+    def add_function(self, func):
+        dll = self.tracer_pythontracer_dll
+        if not dll.AddFunction(self.python_trace_context, func):
+            raise TracerError("AddFunction() failed")
 
     def start(self):
         dll = self.tracer_pythontracer_dll

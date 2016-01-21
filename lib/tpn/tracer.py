@@ -503,6 +503,9 @@ class Tracer:
     def close_trace_stores(self):
         self.tracer_dll.CloseTraceStores(byref(self.trace_stores))
 
+    def close(self):
+        self.tracer_dll.CloseTraceStores(byref(self.trace_stores))
+
     def __enter__(self):
         self.start()
         return self

@@ -256,6 +256,8 @@ def tracer(path=None, dll=None):
     dll.SubmitTraceStoreFileExtensionThreadpoolWork.restype = None
     dll.SubmitTraceStoreFileExtensionThreadpoolWork.argtypes = [ PTRACE_STORE, ]
 
+    dll.Debugbreak.restype = None
+
     #dll.CallSystemTimer.restype = BOOL
     #dll.CallSystemTimer.argtypes = [
     #    PFILETIME,
@@ -560,11 +562,13 @@ class Tracer:
         dll = self.tracer_pythontracer_dll
         if not dll.StartTracing(self.python_trace_context):
             raise TracerError("StartTracing() failed")
+    enable = start
 
     def stop(self):
         dll = self.tracer_pythontracer_dll
         if not dll.StopTracing(self.python_trace_context):
             raise TracerError("StopTracing() failed")
+    disable = stop
 
     def start_profiling(self):
         dll = self.tracer_pythontracer_dll
@@ -576,8 +580,10 @@ class Tracer:
         if not dll.StopProfiling(self.python_trace_context):
             raise TracerError("StopProfiling() failed")
 
-
     def close_trace_stores(self):
+        self.tracer_dll.CloseTraceStores(byref(self.trace_stores))
+
+    def close(self):
         self.tracer_dll.CloseTraceStores(byref(self.trace_stores))
 
     def __enter__(self):
@@ -586,5 +592,8 @@ class Tracer:
 
     def __exit__(self, *exc_info):
         self.stop()
+
+    def debugbreak(self):
+        self.tracer_dll.Debugbreak()
 
 # vim:set ts=8 sw=4 sts=4 tw=80 ai et                                          :

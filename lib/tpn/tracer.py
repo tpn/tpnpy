@@ -33,6 +33,19 @@ PUSERDATA = PVOID
 #===============================================================================
 # ctypes Wrappers
 #===============================================================================
+class RTL(Structure):
+    _fields_ = [
+        ('Size', ULONG),
+        ('NtdllModule', HMODULE),
+        ('Kernel32Module', HMODULE),
+        ('GetSystemTimePreciseAsFileTime', PVOID),
+        ('NtQuerySystemTime', PVOID),
+        ('RtlCharToInteger', PVOID),
+        ('__C_specific_handler', PVOID),
+        ('CopyToMappedMemory', PVOID),
+    ]
+PRTL = POINTER(RTL)
+
 class TRACE_STORE_METADATA(Structure):
     _fields_ = [
         ('NumberOfRecords', ULARGE_INTEGER),
@@ -187,10 +200,24 @@ def pytrace(path=None, dll=None):
 
     dll.InitializeTraceStores.restype = BOOL
     dll.InitializeTraceStores.argtypes = [
+        PRTL,
         PWSTR,
         PVOID,
         PDWORD,
         PDWORD,
+    ]
+
+    return dll
+
+def rtl(path=None, dll=None):
+    assert path or dll
+    if not dll:
+        dll = ctypes.PyDLL(path)
+
+    dll.InitializeRtl.restype = BOOL
+    dll.InitializeRtl.argtypes = [
+        PRTL,
+        PULONG,
     ]
 
     return dll
@@ -202,6 +229,7 @@ def tracer(path=None, dll=None):
 
     dll.InitializeTraceStores.restype = BOOL
     dll.InitializeTraceStores.argtypes = [
+        PRTL,
         PWSTR,
         PVOID,
         PDWORD,
@@ -210,6 +238,7 @@ def tracer(path=None, dll=None):
 
     dll.InitializeTraceContext.restype = BOOL
     dll.InitializeTraceContext.argtypes = [
+        PRTL,
         PTRACE_CONTEXT,
         PDWORD,
         PTRACE_SESSION,
@@ -219,6 +248,7 @@ def tracer(path=None, dll=None):
 
     dll.InitializeTraceSession.restype = BOOL
     dll.InitializeTraceSession.argtypes = [
+        PRTL,
         PTRACE_SESSION,
         PDWORD
     ]
@@ -241,9 +271,10 @@ def python(path=None, dll=None):
 
     dll.InitializePython.restype = BOOL
     dll.InitializePython.argtypes = [
+        PRTL,
         HMODULE,
         PVOID,
-        PDWORD
+        PULONG,
     ]
 
     return dll
@@ -255,6 +286,7 @@ def pythontracer(path=None, dll=None):
 
     dll.InitializePythonTraceContext.restype = BOOL
     dll.InitializePythonTraceContext.argtypes = [
+        PRTL,
         PPYTHON_TRACE_CONTEXT,
         PULONG,
         PPYTHON,
@@ -271,6 +303,13 @@ def pythontracer(path=None, dll=None):
 
     dll.StopTracing.restype = BOOL
     dll.StopTracing.argtypes = [ PPYTHON_TRACE_CONTEXT, ]
+
+    return dll
+
+def sqlite3(path=None, dll=None):
+    assert path or dll
+    if not dll:
+        dll = ctypes.PyDLL(path)
 
     return dll
 
@@ -307,6 +346,7 @@ class Tracer:
                  basedir,
                  tracer_dll_path,
                  tracer_rtl_dll_path,
+                 tracer_sqlite3_dll_path,
                  tracer_python_dll_path,
                  tracer_pythontracer_dll_path,
                  threadpool=None,
@@ -317,21 +357,50 @@ class Tracer:
 
         self.tracer_dll_path = tracer_dll_path
         self.tracer_rtl_dll_path = tracer_rtl_dll_path
+        self.tracer_sqlite3_dll_path = tracer_sqlite3_dll_path
         self.tracer_python_dll_path = tracer_python_dll_path
         self.tracer_pythontracer_dll_path = tracer_pythontracer_dll_path
 
-        self.rtl_dll = None
         self.tracer_dll = tracer(self.tracer_dll_path)
+        self.tracer_rtl_dll = rtl(self.tracer_rtl_dll_path)
+        self.tracer_sqlite3_dll = sqlite3(self.tracer_sqlite3_dll_path)
         self.tracer_python_dll = python(self.tracer_python_dll_path)
         self.tracer_pythontracer_dll = (
             pythontracer(self.tracer_pythontracer_dll_path)
         )
+
+        # Rtl needs to be initialized first.
+        self.rtl = RTL()
+        self.rtl_size = ULONG(sizeof(self.rtl))
+        success = self.tracer_rtl_dll.InitializeRtl(
+            byref(self.rtl),
+            byref(self.rtl_size)
+        )
+
+        if not success:
+            if self.rtl_size.value != sizeof(self.rtl):
+                msg = "Warning: RTL size mismatch: %d != %d\n" % (
+                    self.rtl_size.value,
+                    sizeof(self.rtl)
+                )
+                sys.stderr.write(msg)
+                self.rtl = create_string_buffer(
+                    self.rtl_size.value
+                )
+                success = self.tracer_rtl_dll.InitializeRtl(
+                    byref(self.rtl),
+                    byref(self.rtl_size),
+                )
+
+            if not success:
+                raise TracerError("InitializeRtl() failed")
 
         # The Python structure is complex; we haven't written a ctypes.Structure
         # wrapper for it yet.  So, for now, we use a raw buffer instead.
         self.python_size = ULONG()
         # Get the size required for the structure first.
         self.tracer_python_dll.InitializePython(
+            None,
             None,
             None,
             byref(self.python_size),
@@ -351,6 +420,7 @@ class Tracer:
         self.trace_stores_size = ULONG(sizeof(self.trace_stores))
 
         success = self.tracer_dll.InitializeTraceStores(
+            self.rtl,
             self.basedir,
             byref(self.trace_stores),
             byref(self.trace_stores_size),
@@ -367,6 +437,7 @@ class Tracer:
                     self.trace_stores_size.value
                 )
                 success = self.tracer_dll.InitializeTraceStores(
+                    self.rtl,
                     self.basedir,
                     byref(self.trace_stores),
                     byref(self.trace_stores_size),
@@ -399,6 +470,7 @@ class Tracer:
         self.trace_context = TRACE_CONTEXT()
         self.trace_context_size = ULONG(sizeof(TRACE_CONTEXT))
         success = self.tracer_dll.InitializeTraceContext(
+            byref(self.rtl),
             byref(self.trace_context),
             byref(self.trace_context_size),
             byref(self.trace_session),
@@ -417,6 +489,7 @@ class Tracer:
                     self.trace_context_size.value
                 )
                 success = self.tracer_dll.InitializeTraceContext(
+                    byref(self.rtl),
                     byref(self.trace_context),
                     byref(self.trace_context_size),
                     byref(self.trace_session),
@@ -433,6 +506,8 @@ class Tracer:
         self.python_trace_context = PYTHON_TRACE_CONTEXT()
         self.python_trace_context_size = ULONG(sizeof(PYTHON_TRACE_CONTEXT))
         success = self.tracer_pythontracer_dll.InitializePythonTraceContext(
+            byref(self.rtl),
+            byref(self.trace_context),
             byref(self.python_trace_context),
             byref(self.python_trace_context_size),
             byref(self.python),
@@ -456,6 +531,7 @@ class Tracer:
             basedir,
             conf.tracer_debug_dll_path,
             conf.tracer_rtl_debug_dll_path,
+            conf.tracer_sqlite3_debug_dll_path,
             conf.tracer_python_debug_dll_path,
             conf.tracer_pythontracer_debug_dll_path,
         )
@@ -470,6 +546,7 @@ class Tracer:
             basedir,
             conf.tracer_dll_path,
             conf.tracer_rtl_dll_path,
+            conf.tracer_sqlite3_dll_path,
             conf.tracer_python_dll_path,
             conf.tracer_pythontracer_dll_path,
         )

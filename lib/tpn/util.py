@@ -1811,6 +1811,51 @@ def download_url(url):
 def create_namedtuple_from_csv_url(name, url):
     return create_namedtuple_from_csv(name, download_url(url))
 
+#===============================================================================
+# Window Functions
+#===============================================================================
+
+if os.name == 'nt':
+    def enum_windows():
+        from win32gui import GetWindowText, GetClassName, EnumWindows
+        results = []
+        def _handler(hwnd, results):
+            results.append((hwnd, GetWindowText(hwnd), GetClassName(hwnd)))
+        EnumWindows(_handler, results)
+        return results
+
+    def find_windows(text='', cls=None, windows=None):
+        if not windows:
+            windows = enum_windows()
+        return [
+            (h, t, c) for (h, t, c) in windows if (
+                text.lower() in t.lower() and (
+                    True if not cls else cls == c
+                )
+            )
+        ]
+
+    def apply_window_positions(w):
+        from win32gui import SetWindowPlacement
+        windows = enum_windows()
+        for (text, cls, pos) in w:
+            for (h, t, c) in find_windows(text, cls, windows):
+                SetWindowPlacement(h, pos)
+
+    def set_window_on_top(text, cls):
+        from win32gui import SetWindowPos
+        SWP_NOMOVE = 2
+        SWP_NOSIZE = 1
+        HWND_TOPMOST = -1
+        HWND_NOTOPMOST = -2
+        flags = SWP_NOMOVE | SWP_NOSIZE
+        for (hwnd, wtext, wcls) in enum_windows():
+            if wtext.lower().startswith(text.lower()):
+                if not cls or wcls.lower().startswith(cls.lower()):
+                    print("setting '%s' (%d, %s) on top" % (wtext, hwnd, cls))
+                    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, flags)
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()

@@ -1165,6 +1165,15 @@ class timer:
     def timeit(cls):
         return cls(verbose=True)
 
+# Lovingly stolen from github.com/busyloop/lolcat.
+
+def rainbow(index, frequency=0.1):
+    from math import sin, pi
+    red   = (sin((frequency * index) + 0) * 127) + 128
+    green = (sin((frequency * index) + ((2 * pi) / 3)) * 127) + 128
+    blue  = (sin((frequency * index) + ((4 * pi) / 3)) * 127) + 128
+    return "#%02X%02X%02X" % (red, green, blue)
+
 #===============================================================================
 # Helper Classes
 #===============================================================================

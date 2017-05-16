@@ -132,6 +132,26 @@ def bytes_to_human(b):
         i += 1
     return bytes_conv_table[i](b)
 
+def milliseconds_to_microseconds(ms):
+    return ms * 1000
+
+def milliseconds_to_ticks(ms, frequency):
+    nanos_per_tick = 1.0 / float(frequency)
+    nanos = ms * 1e-9
+    ticks = nanos / nanos_per_tick
+    return ticks
+
+def nanos_per_frame(fps):
+    return (1.0 / float(fps)) * 1e9
+
+def frames_per_second_to_ticks(fps, frequency=None):
+    return ((1.0 / float(fps)) / (1.0 / float(frequency)))
+
+def round_to_pages(size, page_size=4096):
+    return (
+        (size + page_size - 1) & ~(page_size -1)
+    )
+
 def hex_zfill(h, bits=64):
     s = str(hex(h | (1 << bits+4)))[3:]
     div = (bits >> 3)
@@ -1164,15 +1184,6 @@ class timer:
     @classmethod
     def timeit(cls):
         return cls(verbose=True)
-
-# Lovingly stolen from github.com/busyloop/lolcat.
-
-def rainbow(index, frequency=0.1):
-    from math import sin, pi
-    red   = (sin((frequency * index) + 0) * 127) + 128
-    green = (sin((frequency * index) + ((2 * pi) / 3)) * 127) + 128
-    blue  = (sin((frequency * index) + ((4 * pi) / 3)) * 127) + 128
-    return "#%02X%02X%02X" % (red, green, blue)
 
 #===============================================================================
 # Helper Classes

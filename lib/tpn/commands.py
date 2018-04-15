@@ -28,6 +28,18 @@ from .commandinvariant import (
 # Commands
 #===============================================================================
 
+class DoctestCommand(Command):
+    _shortname_ = 'dt'
+    def run(self):
+        self._out("running doctests...")
+        quiet = self.options.quiet
+        import doctest
+        import tpn.util
+        import tpn.logic
+        verbose = not quiet
+        doctest.testmod(tpn.util, verbose=verbose, raise_on_error=True)
+        doctest.testmod(tpn.logic, verbose=verbose, raise_on_error=True)
+
 class HelloWorld(Command):
     def run(self):
         self._out('Hello, World!')

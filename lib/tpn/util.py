@@ -1139,7 +1139,8 @@ class timer:
     """
     Helper class for timing execution of code within a code block.
     Usage:
-    >>> with timer.timeit():
+
+    > with timer.timeit():
         ...
         ...
     135ms

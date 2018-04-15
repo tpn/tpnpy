@@ -166,6 +166,97 @@ def bin_zfill(h, bits=64):
     low = s[div:]
     return '0b%s`%s' % (high, low)
 
+def percent_change(old, new):
+    diff = float(old) - float(new)
+    return (diff / old) * 100.0
+
+def align_down(address, alignment):
+    """
+    >>> hex(align_down(0x00007ffd11483294, 2)).replace('L', '')
+    '0x7ffd11483294'
+
+    >>> hex(align_down(0x00007ffd11483294, 4)).replace('L', '')
+    '0x7ffd11483294'
+
+    >>> hex(align_down(0x00007ffd11483294, 8)).replace('L', '')
+    '0x7ffd11483290'
+
+    >>> hex(align_down(0x00007ffd11483294, 16)).replace('L', '')
+    '0x7ffd11483290'
+
+    >>> hex(align_down(0x00007ffd11483294, 256)).replace('L', '')
+    '0x7ffd11483200'
+
+    >>> hex(align_down(0x00007ffd11483294, 512)).replace('L', '')
+    '0x7ffd11483200'
+
+    """
+    return address & ~(alignment-1)
+
+def test_align_down():
+    return [
+        hex(align_down(0x00007ffd11483294, 2)).replace('L', ''),
+        hex(align_down(0x00007ffd11483294, 4)).replace('L', ''),
+        hex(align_down(0x00007ffd11483294, 8)).replace('L', ''),
+        hex(align_down(0x00007ffd11483294, 16)).replace('L', ''),
+        hex(align_down(0x00007ffd11483294, 256)).replace('L', ''),
+        hex(align_down(0x00007ffd11483294, 512)).replace('L', ''),
+    ]
+
+def align_up(address, alignment):
+    """
+    >>> hex(align_up(0x00007ffd11483294, 2)).replace('L', '')
+    '0x7ffd11483294'
+
+    >>> hex(align_up(0x00007ffd11483294, 4)).replace('L', '')
+    '0x7ffd11483294'
+
+    >>> hex(align_up(0x00007ffd11483294, 8)).replace('L', '')
+    '0x7ffd11483298'
+
+    >>> hex(align_up(0x00007ffd11483294, 16)).replace('L', '')
+    '0x7ffd114832a0'
+
+    >>> hex(align_up(0x00007ffd11483294, 256)).replace('L', '')
+    '0x7ffd11483300'
+
+    >>> hex(align_up(0x00007ffd11483294, 512)).replace('L', '')
+    '0x7ffd11483400'
+    """
+    return (address + (alignment-1)) & ~(alignment-1)
+
+def test_align_up():
+    return [
+        hex(align_up(0x00007ffd11483294, 2)).replace('L', ''),
+        hex(align_up(0x00007ffd11483294, 4)).replace('L', ''),
+        hex(align_up(0x00007ffd11483294, 8)).replace('L', ''),
+        hex(align_up(0x00007ffd11483294, 16)).replace('L', ''),
+        hex(align_up(0x00007ffd11483294, 256)).replace('L', ''),
+        hex(align_up(0x00007ffd11483294, 512)).replace('L', ''),
+    ]
+
+def trailing_zeros(address):
+    count = 0
+    addr = bin(address)
+    for c in reversed(addr):
+        if c != '0':
+            break
+        count += 1
+    return count
+
+def get_address_alignment(address):
+    """
+    >>> get_address_alignment(0x00007ffd11483294)
+    4
+    >>> get_address_alignment(0x00007ffd114832c1)
+    1
+    >>> get_address_alignment(0x00007ffd11483298)
+    8
+    >>> get_address_alignment(0x00007ffd11483200)
+    512
+    """
+    return 1 << trailing_zeros(address)
+
 def lower(l):
     return [ s.lower() for s in l ]
 

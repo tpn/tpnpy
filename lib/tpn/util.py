@@ -501,6 +501,9 @@ def indent(text, size=4):
     pattern = re.compile('^')
     return sep.join(pattern.sub(prefix, line) for line in lines)
 
+def text_to_html(text):
+    return ''.join('&#%d;' % ord(c) for c in text)
+
 def clone_dict(d):
     """
     Helper method intended to be used with defaultdicts -- returns a new dict

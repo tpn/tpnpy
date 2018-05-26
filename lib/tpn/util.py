@@ -1430,7 +1430,7 @@ class SlotObject(object):
             seen.add(key)
             setattr(self, key, value)
 
-        for (key, value) in kwds.iteritems():
+        for (key, value) in kwds.items():
             seen.add(key)
             setattr(self, key, value)
 

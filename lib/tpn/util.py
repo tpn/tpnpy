@@ -257,6 +257,17 @@ def get_address_alignment(address):
     """
     return 1 << trailing_zeros(address)
 
+def is_power_of_2(x):
+    return (x & (x - 1))
+
+def round_up_power_of_2(x):
+    return 1<<(x-1).bit_length()
+
+def round_up_next_power_of_2(x):
+    if is_power_of_2(x):
+        x += 1
+    return round_up_power_of_2(x)
+
 def lower(l):
     return [ s.lower() for s in l ]
 
@@ -1391,6 +1402,50 @@ class word_groups(object):
         while True:
             r = [ e for e in self[i] if e ]
             if not r:
+                raise StopIteration
+            yield r
+            i += 1
+
+    def __repr__(self):
+        return repr([ e for e in self ])
+
+class before_and_after(object):
+    """
+    >>> l = before_and_after(['a', 'b', 'c', 'd'])
+    >>> l[0]
+    ('a', None, 'b')
+    >>> l[1]
+    ('b', 'a', 'c')
+    >>> l[2]
+    ('c', 'b', 'd')
+    >>> l[3]
+    ('d', 'c', None)
+    >>> l[4]
+    (None, None, None)
+    >>> [ e for e in l ]
+    [('a', None, 'b'), ('b', 'a', 'c'), ('c', 'b', 'd'), ('d', 'c', None)]
+    """
+    def __init__(self, seq):
+        if not isinstance(seq, list):
+            seq = seq.split(' ')
+        self.seq = forgiving_list(seq)
+
+    def __getitem__(self, i):
+        l = self.seq
+        if i < 0:
+            return (None, None, None)
+        elif i >= len(l):
+            return (None, None, None)
+        prev = l[i-1] if i > 0 else None
+        next = l[i+1] if i < len(l)+1 else None
+        return (l[i], prev, next)
+
+    def __iter__(self):
+        i = 0
+        while True:
+            #r = [e for e in self[i]]
+            r = self[i]
+            if r == (None, None, None):
                 raise StopIteration
             yield r
             i += 1

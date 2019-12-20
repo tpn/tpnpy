@@ -258,7 +258,7 @@ def get_address_alignment(address):
     return 1 << trailing_zeros(address)
 
 def is_power_of_2(x):
-    return (x & (x - 1))
+    return (x & (x - 1)) == 0
 
 def round_up_power_of_2(x):
     return 1<<(x-1).bit_length()

@@ -2122,6 +2122,34 @@ if os.name == 'nt':
             )
         ]
 
+    def find_vim():
+        handles = [ w[0] for w in find_windows(cls='Vim') if w[-1] == 'Vim' ]
+        return None if not handles else handles[0]
+
+    def make_transparent(hwnd, alpha=232):
+
+        from win32api import (
+            RGB,
+        )
+
+        from win32con import (
+            LWA_ALPHA,
+            GWL_EXSTYLE,
+            WS_EX_LAYERED,
+        )
+
+        from win32gui import (
+            SetWindowLong,
+            GetWindowLong,
+            SetLayeredWindowAttributes,
+            GetLayeredWindowAttributes,
+        )
+
+        style = GetWindowLong(hwnd, GWL_EXSTYLE)
+        style |= WS_EX_LAYERED
+        SetWindowLong(hwnd, GWL_EXSTYLE, style)
+        SetLayeredWindowAttributes(hwnd, RGB(0,0,0), alpha, LWA_ALPHA)
+
     def apply_window_positions(w):
         from win32gui import SetWindowPlacement
         windows = enum_windows()

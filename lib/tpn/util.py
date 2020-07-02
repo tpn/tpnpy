@@ -141,6 +141,21 @@ def milliseconds_to_ticks(ms, frequency):
     ticks = nanos / nanos_per_tick
     return ticks
 
+def filetime_utc_to_datetime_utc(ft):
+    micro = ft / 10
+    (seconds, micro) = divmod(micro, 1000000)
+    (days, seconds) = divmod(seconds, 86400)
+    base = datetime.datetime(1601, 1, 1, tzinfo=datetime.timezone.utc)
+    delta = timedelta(days, seconds, micro)
+    dt = base + delta
+    return dt
+
+def datetime_utc_to_local_tz(dt):
+    return dt.replace(tzinfo=datetime.timezone.utc).astimezone(tz=None)
+
+def filetime_utc_to_local_tz(ft):
+    return datetime_utc_to_local_tz(filetime_utc_to_datetime_utc(ft))
+
 def nanos_per_frame(fps):
     return (1.0 / float(fps)) * 1e9
 
@@ -511,6 +526,16 @@ def indent(text, size=4):
     sep = '\r\n' if text[ix-1:ix+1] == '\r\n' else '\n'
     pattern = re.compile('^')
     return sep.join(pattern.sub(prefix, line) for line in lines)
+
+def char_count(text):
+    """
+    Returns a dict where keys represent each unique character occuring in text,
+    and values represent the number of times that character occurred.
+    """
+    r = defaultdict(int)
+    for c in text:
+        r[c] += 1
+    return r
 
 def text_to_html(text):
     return ''.join('&#%d;' % ord(c) for c in text)

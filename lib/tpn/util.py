@@ -185,6 +185,16 @@ def percent_change(old, new):
     diff = float(old) - float(new)
     return (diff / old) * 100.0
 
+def fold_increase(old, new):
+    diff = float(new) - float(old)
+    fold = diff / new
+    return fold
+
+def fold_decrease(old, new):
+    diff = float(old) - float(new)
+    fold = diff / old
+    return fold
+
 def align_down(address, alignment):
     """
     >>> hex(align_down(0x00007ffd11483294, 2)).replace('L', '')
@@ -2174,6 +2184,51 @@ if os.name == 'nt':
         style |= WS_EX_LAYERED
         SetWindowLong(hwnd, GWL_EXSTYLE, style)
         SetLayeredWindowAttributes(hwnd, RGB(0,0,0), alpha, LWA_ALPHA)
+
+    def toggle_transparent(hwnd, alpha=232):
+
+        import pywintypes
+
+        from win32api import (
+            RGB,
+        )
+
+        from win32con import (
+            LWA_ALPHA,
+            GWL_EXSTYLE,
+            WS_EX_LAYERED,
+        )
+
+        from win32gui import (
+            SetWindowLong,
+            GetWindowLong,
+            SetLayeredWindowAttributes,
+            GetLayeredWindowAttributes,
+        )
+
+        is_transparent = False
+
+        # If the window is not transparent, GetLayeredWindowAttributes() will
+        # raise an exception.
+        try:
+            GetLayeredWindowAttributes(hwnd)
+            is_transparent = True
+        except pywintypes.error as e:
+            if e.args[2] != 'The parameter is incorrect.':
+                raise
+
+        if is_transparent:
+            style = GetWindowLong(hwnd, GWL_EXSTYLE)
+            style &= ~WS_EX_LAYERED
+            SetWindowLong(hwnd, GWL_EXSTYLE, style)
+        else:
+            style = GetWindowLong(hwnd, GWL_EXSTYLE)
+            style |= WS_EX_LAYERED
+            SetWindowLong(hwnd, GWL_EXSTYLE, style)
+            SetLayeredWindowAttributes(hwnd, RGB(0,0,0), alpha, LWA_ALPHA)
+
+    def toggle_vim_transparency():
+        toggle_transparent(find_vim())
 
     def apply_window_positions(w):
         from win32gui import SetWindowPlacement

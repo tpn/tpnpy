@@ -404,6 +404,53 @@ def generate_repr(obj, exclude=None, include=None, yielder=None):
         ))
     )
 
+def hexdump(string, remove_bom=True, encoding='utf-16', cols=12,
+            add_nul=True, return_rows=False, clipboard=False,
+            indent=4):
+    s = string.encode(encoding)
+    if remove_bom:
+        s = s[2:]
+
+    if add_nul:
+        if encoding == 'utf-16':
+            s += b'\x00\x00'
+        else:
+            s += b'\x00'
+
+    chars = [ f'{c:#04x}' for c in s ]
+    rows = []
+    start = 0 - cols
+    size = len(chars)
+    while True:
+        start += cols
+        assert start <= size, (start, size)
+        if start == size:
+            break
+        end = start + cols
+        if end > size:
+            rows.append(chars[start:size])
+            break
+
+        rows.append(chars[start:end])
+
+    if return_rows:
+        return rows
+
+    lines = []
+    for row in rows:
+        line = ', '.join(row)
+        if indent:
+            line = f"{' ' * indent}{line}"
+        lines.append(line)
+
+    text = ',\n'.join(lines)
+
+    if clipboard:
+        from tpn.clipboard import cb
+        cb(text)
+
+    return text
+
 def get_query_slices(total_size, ideal_chunk_size=None, min_chunk_size=None):
     from .config import get_config
     conf = get_config()

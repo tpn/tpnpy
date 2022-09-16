@@ -20,6 +20,7 @@ except ImportError:
     StringIO = io.StringIO
 
 from datetime import (
+    timezone,
     timedelta,
 )
 
@@ -85,6 +86,9 @@ SHORT_MONTHS_UPPER = [ m.upper() for m in SHORT_MONTHS ]
 SHORT_MONTHS_SET = set(SHORT_MONTHS)
 SHORT_MONTHS_UPPER_SET = set(SHORT_MONTHS_UPPER)
 
+EPOCH_AS_FILETIME = 116444736000000000  # January 1, 1970 as filetime
+HUNDREDS_OF_NS = 10000000
+
 is_linux = (sys.platform.startswith('linux'))
 is_darwin = (sys.platform == 'darwin')
 is_win32 = (sys.platform == 'win32')
@@ -140,6 +144,13 @@ def milliseconds_to_ticks(ms, frequency):
     nanos = ms * 1e-9
     ticks = nanos / nanos_per_tick
     return ticks
+
+def datetime_to_filetime(dt):
+    if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    filetime = EPOCH_AS_FILETIME + (calendar.timegm(dt.timetuple()) * HUNDREDS_OF_NS)
+    filetime += (dt.microsecond * 10)
+    return filetime
 
 def filetime_utc_to_datetime_utc(ft):
     micro = ft / 10

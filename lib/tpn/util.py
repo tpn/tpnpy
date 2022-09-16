@@ -167,6 +167,11 @@ def datetime_utc_to_local_tz(dt):
 def filetime_utc_to_local_tz(ft):
     return datetime_utc_to_local_tz(filetime_utc_to_datetime_utc(ft))
 
+def datetime_to_str(dt, fmt=None):
+    if fmt is None:
+        fmt = '%Y-%m-%d %H:%M:%S'
+    return dt.strftime(fmt)
+
 def nanos_per_frame(fps):
     return (1.0 / float(fps)) * 1e9
 

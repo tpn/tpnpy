@@ -11,6 +11,7 @@ import inspect
 import calendar
 import datetime
 import itertools
+import subprocess
 import collections
 
 try:
@@ -1400,6 +1401,26 @@ class timer:
     @classmethod
     def timeit(cls):
         return cls(verbose=True)
+
+def archive_untracked_git_files(path, archive_path):
+    from .path import join_path
+    with chdir(path):
+        args = ['git', 'status', '--porcelain', '--untracked-files=all']
+        result = subprocess.run(args, stdout=PIPE, text=True)
+
+        output = result.stdout.split('\n')
+
+        lines = [ l[3:].strip('"') for l in output if l.startswith('??') ]
+
+        dirname = os.path.dirname
+
+        for line in lines:
+            src_path = join_path('.', line)
+            dst_path = join_path(archive_path, line)
+            os.makedirs(dirname(dst_path), exist_ok=True)
+            shutil.move(src_path, dst_path)
+            print(f'Moved {src_path} to {dst_path}')
+
 
 #===============================================================================
 # Helper Classes

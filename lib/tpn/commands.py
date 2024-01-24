@@ -17,6 +17,7 @@ from .invariant import (
     PathInvariant,
     StringInvariant,
     DirectoryInvariant,
+    MkDirectoryInvariant,
     PositiveIntegerInvariant,
 )
 
@@ -397,6 +398,22 @@ class TestVsPyProfTraceStores(InvariantAwareCommand):
         self.dll = dll
 
 
+class ArchiveUntrackedFiles(InvariantAwareCommand):
+    """
+    Archives all untracked files in the current directory.
+    """
+
+    path = None
+    _path = None
+    class PathArg(MkDirectoryInvariant):
+        _help = "Path to the archive directory."
+        _mandatory = True
+
+    def run(self):
+        InvariantAwareCommand.run(self)
+        import os
+        from .util import archive_untracked_git_files
+        archive_untracked_git_files(os.getcwd(), self._path)
 
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et                                             :

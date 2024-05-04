@@ -415,5 +415,232 @@ class ArchiveUntrackedFiles(InvariantAwareCommand):
         from .util import archive_untracked_git_files
         archive_untracked_git_files(os.getcwd(), self._path)
 
+class PrintPytestFailures(InvariantAwareCommand):
+    """
+    Parses a given pytest-results.xml file, prints a tabular summary of test
+    failures, and saves full failure details in .json and .txt format.
+    """
+
+    path = None
+    _path = None
+    class PathArg(PathInvariant):
+        _help = "path of pytest-results.xml file"
+
+    no_fancy_unicode_chars = None
+    class NoFancyUnicodeCharsArg(BoolInvariant):
+        _help = "use normal ASCII chars instead of fancy Unicode counterparts"
+        _mandatory = False
+        _default = False
+
+    def run(self):
+        out = self._out
+        options = self.options
+        verbose = self._verbose
+
+        path = self._path
+
+        from .util import (
+            render_text_table,
+            render_fancy_text_table,
+            Dict,
+        )
+
+        from itertools import (
+            chain,
+            repeat,
+        )
+
+        import json
+        from textwrap import (
+            dedent,
+            indent,
+        )
+        from xml.etree import ElementTree
+
+        tree = ElementTree.parse(path)
+        root = tree.getroot()
+        elements = tree.findall('.//testcase/[failure]')
+
+        dicts = []
+        rows = [(
+            'Index',
+            'Start Time',
+            'Module',
+            'Run Time',
+            'Failure',
+        )]
+        #import ipdb
+        #ipdb.set_trace()
+
+        for (i, e) in enumerate(elements, start=1):
+            # Example attributes:
+            # {'classname': 'test_sql_files.TestParquet',
+            #  'name': 'test_sql[nonnull-non_equi_join:test_63.sql]',
+            #  'time': '11.662'}
+            a = e.attrib.copy()
+            module = a['classname']
+            #test_line = f'{a["name"]}:{a["line"]}'
+            run_time = '%ss ' % a['time']
+            try:
+                p = e.find('properties').find('property').attrib
+                test_start = p['value']
+            except:
+                test_start = '?'
+            failure = e.find('failure')
+            failure_msg = short_failure_msg = failure.get('message')
+            if len(failure_msg) > 130:
+                short_failure_msg = f'{failure_msg[:60]}...'
+            row = [
+                f'{i} ',
+                test_start,
+                module,
+                run_time,
+                short_failure_msg,
+            ]
+            rows.append(row)
+            a['failure_message'] = failure_msg
+            a['failure_text'] = failure.text
+            dicts.append(a)
+
+        k = Dict()
+        k.banner = (f'Failures for {self._path}.',)
+        k.formats = lambda: chain(
+            (str.rjust,),
+            (str.center,),
+            (str.rjust,),
+            (str.ljust,),
+            repeat(str.ljust),
+        )
+        k.output = self.ostream
+        if self.no_fancy_unicode_chars:
+            render_text_table(rows, **k)
+        else:
+            render_fancy_text_table(rows, **k)
+
+        json_path = path.replace('.xml', '-failures.json')
+        with open(json_path, 'w') as f:
+            json.dump(dicts, f)
+        out(f'Wrote {json_path}.')
+
+        #text_path = path.replace('.xml', '-failures.txt')
+        #with open(text_path, 'w') as f:
+        #    for d in (Dict(d) for d in dicts):
+        #        f.write(f'{d.file}:{d.line} ({d.name}): {d.failure_message}\n')
+        #        f.write(indent(dedent(d.failure_text), prefix='    '))
+        #        f.write('\n\n')
+        #out(f'Wrote {text_path}.')
+
+class ComparePytestResults(InvariantAwareCommand):
+    """
+    Parses two pytest-results.xml files and prints a tabular summary comparing
+    test results for the given runs.
+    """
+
+    left = None
+    _left = None
+    class LeftArg(PathInvariant):
+        _help = "path of left pytest-results.xml file"
+
+    right = None
+    _right = None
+    class RightArg(PathInvariant):
+        _help = "path of right pytest-results.xml file"
+
+    no_fancy_unicode_chars = None
+    class NoFancyUnicodeCharsArg(BoolInvariant):
+        _help = "use normal ASCII chars instead of fancy Unicode counterparts"
+        _mandatory = False
+        _default = False
+
+    include_successful_tests = None
+    class IncludeSuccessfulTestsArg(BoolInvariant):
+        _help = (
+            "includes tests that were successful in both runs (normally, a "
+            "row is only generated if a test failed in one or both runs)"
+        )
+        _mandatory = False
+        _default = False
+
+    def _process_results(self, path):
+        from .util import Dict
+        from xml.etree import ElementTree
+        tree = ElementTree.parse(path)
+        root = tree.getroot()
+        elements = tree.findall('.//*testcase')
+        results = {}
+        check = '\u2713' if not self.no_fancy_unicode_chars else 'Y'
+        cross = '\u2717' if not self.no_fancy_unicode_chars else 'N'
+        for e in elements:
+            a = Dict(e.attrib)
+            a.test_line = f'{a.name}:{a.line}'
+            a.test_id = f'{a.classname}.{a.test_line}'
+            a.success = (e.find('failure') is None)
+            a.result = check if a.success else cross
+            # Some ETW screenshot tests appear to trigger this assertion.
+            #assert a.test_id not in results, a.test_id
+            results[a.test_id] = a
+        return results
+
+    def run(self):
+        out = self._out
+
+        from .util import (
+            render_text_table,
+            render_fancy_text_table,
+            Dict,
+        )
+
+        from itertools import (
+            chain,
+            repeat,
+        )
+
+        left = self._process_results(self._left)
+        right = self._process_results(self._right)
+
+        ids = set()
+        for test_id in chain(left.keys(), right.keys()):
+            ids.add(test_id)
+
+        rows = [(
+            'Module',
+            'Test:Line',
+            'Left',
+            'Right',
+        )]
+
+        for test_id in sorted(ids):
+            l = left.get(test_id)
+            r = right.get(test_id)
+            t = l or r
+            if not self.include_successful_tests:
+                if l and r and l.success and r.success:
+                    continue
+            row = [
+                t.classname,
+                t.test_line,
+                '' if not l else l.result,
+                '' if not r else r.result,
+            ]
+            rows.append(row)
+
+        k = Dict()
+        k.banner = (
+            'PyTest Result Comparision',
+            f'{self.left} (left) vs {self.right} (right).',
+        )
+        k.formats = lambda: chain(
+            (str.rjust,),
+            (str.ljust,),
+            (str.center,),
+            (str.center,),
+        )
+        k.output = self.ostream
+        if self.no_fancy_unicode_chars:
+            render_text_table(rows, **k)
+        else:
+            render_fancy_text_table(rows, **k)
+
+
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et                                             :

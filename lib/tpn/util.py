@@ -808,6 +808,109 @@ def render_text_table(rows, **kwds):
 
     output.write(add_linesep_if_missing('\n'.join(out)))
 
+def render_fancy_text_table(rows, **kwds):
+    banner = kwds.get('banner')
+    footer = kwds.get('footer')
+    output = kwds.get('output', sys.stdout)
+    balign = kwds.get('balign', str.center)
+    formats = kwds.get('formats')
+    special = kwds.get('special')
+    rows = list(rows)
+    if not formats:
+        formats = lambda: chain((str.ljust,), repeat(str.rjust))
+
+    cols = len(rows[0])
+    paddings = [
+        max([len(str(r[i])) for r in rows]) + 2
+            for i in range(cols)
+    ]
+
+    vb = vbar = '\u2502'
+    hb = hbar = '\u2500'
+    tl = top_left_bar = '\u250c'
+    bl = bottom_left_bar = '\u2514'
+    tr = top_right_bar = '\u2510'
+    br = bottom_right_bar = '\u2518'
+    vr = vert_right_bar = '\u251c'
+    vl = vert_left_bar = '\u2524'
+    vlr = vert_left_right_bar = '\u253c'
+    dh = down_horiz_bar = '\u252c'
+    uh = up_horiz_bar = '\u2534'
+
+    length = sum(paddings) + cols
+    top_strip_1 = f'{tl}%s{tr}' % (hb * (length-1))
+    top_strip_2 = f'{vr}%s{vl}' % (hb * (length-1))
+    bottom_strip_1 = f'{bl}%s{br}' % (hb * (length-1))
+    bottom_strip_2 = f'{vr}%s{vl}' % (hb * (length-1))
+    if not footer:
+        bottom_strip = bottom_strip_1
+    else:
+        bottom_strip = bottom_strip_2
+
+    out = list()
+    if banner:
+        lines = iterable(banner)
+        banner = (
+            [ top_strip_1 ] +
+            [ f'{vb}%s{vb}' % balign(l, length-1) for l in lines ] +
+            [ top_strip_2, ]
+        )
+        out.append('\n'.join(banner))
+
+    rows.insert(1, [ hb, ] * cols)
+    out += [
+        '\n'.join([
+            k + vb.join([
+                fmt(str(column), padding, (
+                    special if column == special else fill
+                )) for (column, fmt, padding) in zip(row, fmts(), paddings)
+            ]) + k for (row, fmts, fill, k) in zip(
+                rows,
+                chain(
+                    repeat(lambda: repeat(str.center,), 1),
+                    repeat(formats,)
+                ),
+                chain((' ',), repeat(hb, 1), repeat(' ')),
+                chain((vb, '+'), repeat(vb))
+            )
+        ] + [bottom_strip,])
+    ]
+
+    if footer:
+        footers = iterable(footer)
+        footer = (
+            [ top_strip_2 ] +
+            [ f'{hb}%s{hb}' % balign(f, length-1) for f in footers ] +
+            [ bottom_strip_2, '' ]
+        )
+        out.append('\n'.join(footer))
+
+    lines = '\n'.join(out).split('\n')
+
+    # Hack in the last few replacements.  Easier doing them manually here than
+    # messing with the generator-from-hell above.
+    line_after_banner = 1 + len(banner)
+    for (i, c) in zip((line_after_banner, -1), (dh, uh)):
+        line = lines[i]
+        line = (
+            line.replace(f'+{hb}', f'{vr}{hb}')
+                .replace(f'{hb}+', f'{hb}{vl}')
+        )
+        start = line[0]
+        end = line[-1]
+        middle = c.join(hb * p for p in paddings)
+        new_line = f'{start}{middle}{end}'
+        lines[i] = new_line
+
+    text = add_linesep_if_missing('\n'.join(lines))
+    text = (
+        text.replace(f'+{hb}', f'{vr}{hb}')
+            .replace(f'{hb}+', f'{hb}{vl}')
+            .replace(f'{hb}{vb}{hb}', f'{hb}{vlr}{hb}')
+    )
+
+    output.write(text)
+
 def render_unicode_table(rows, **kwds):
     """
     Unicode version of above.  Such code repetition!

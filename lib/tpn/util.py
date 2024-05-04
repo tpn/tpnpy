@@ -1324,10 +1324,14 @@ def rotate_file(path, zfill_digits=5):
     """
     (prefix, ext) = splitext(path)
     base = basename(prefix)
+    exists = os.path.exists
+    dname = dirname(path)
+    from .path import join_path
     while True:
         for i in itertools.count(1):
-            new_path = f'{base}_{str(i).zfill(zfill_digits)}{ext}'
-            if not os.path.exists(new_path):
+            new_filename = f'{base}_{str(i).zfill(zfill_digits)}{ext}'
+            new_path = join_path(dname, new_filename)
+            if not exists(new_path):
                 os.rename(path, new_path)
                 return new_path
 
@@ -1876,8 +1880,9 @@ class Constant(dict):
 def invert_counts(d, sort=True, reverse=True):
     i = {}
     for (k, v) in d.items():
-        if k[0] == '_' or k == 'trait_names':
-            continue
+        if isinstance(k, str):
+            if k[0] == '_' or k == 'trait_names':
+                continue
         i.setdefault(v, []).append(k)
     if not sort:
         return i
@@ -1897,8 +1902,10 @@ class Stats(defaultdict):
 
     def keys(self):
         return [
-            k for k in defaultdict.keys(self)
-                if k[0] != '_' and k != 'trait_names'
+            k for k in defaultdict.keys(self) if (
+                not isinstance(k, str) or
+                k[0] != '_' and k != 'trait_names'
+            )
         ]
 
     def _to_dict(self):
@@ -1913,6 +1920,10 @@ class Stats(defaultdict):
 
     def _invert(self):
         return invert_counts(self)
+
+    def merge(self, other):
+        for (k, v) in other.items():
+            self[k] += v
 
 class KeyedStats(Stats):
     def __init__(self):
@@ -1949,6 +1960,13 @@ class Dict(dict):
         """Override the hash function to use the SHA256 checksum."""
         # Convert the hex digest to an integer
         return int(self.sha256, 16)
+
+class ForgivingDict(Dict):
+    """
+    A dict that returns None for missing keys.
+    """
+    def __getitem__(self, name):
+        return dict.get(self, name, None)
 
 class DecayDict(Dict):
     """

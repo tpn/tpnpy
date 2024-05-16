@@ -1440,6 +1440,22 @@ def rotate_file(path, zfill_digits=5):
 
         zfill_digits += 1
 
+def chunked(iterable, size):
+    """
+    Yield successive size-sized chunks from iterable.
+    """
+    it = iter(iterable)
+    while True:
+        chunk = []
+        try:
+            for _ in range(size):
+                chunk.append(next(it))
+            yield chunk
+        except StopIteration:
+            if chunk:
+                yield chunk
+            break
+
 # memoize/memoized lovingly stolen from conda.utils.
 class memoized(object):
     """Decorator. Caches a function's return value each time it is called.
@@ -2027,6 +2043,13 @@ class Stats(defaultdict):
     def merge(self, other):
         for (k, v) in other.items():
             self[k] += v
+
+    @classmethod
+    def make(cls, *args):
+        s = cls()
+        for a in args:
+            s.merge(a)
+        return s
 
 class KeyedStats(Stats):
     def __init__(self):

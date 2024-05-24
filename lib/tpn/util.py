@@ -1456,6 +1456,32 @@ def chunked(iterable, size):
                 yield chunk
             break
 
+def clear_screen():
+    if os.name == 'nt':
+        os.system('cls')
+    else:
+        sys.stdout.write(chr(27) + "[2J")
+
+def yes_no(istream):
+    r = istream.read(1)
+    istream.read(1)
+    if r in ('Y', 'y'):
+        return 'y'
+    elif r in ('N', 'n'):
+        return 'n'
+    return
+
+def yes_no_quit(istream):
+    r = istream.read(1)
+    istream.read(1)
+    if r in ('Y', 'y'):
+        return 'y'
+    elif r in ('N', 'n'):
+        return 'n'
+    elif r in ('Q', 'q'):
+        return 'q'
+    return
+
 # memoize/memoized lovingly stolen from conda.utils.
 class memoized(object):
     """Decorator. Caches a function's return value each time it is called.

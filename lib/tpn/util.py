@@ -713,6 +713,9 @@ if is_linux:
         libc.prctl(PR_SET_NAME, name, 0, 0, 0)
 
     def get_openai_key(path=None):
+        key = os.environ.get('OPENAI_API_KEY', None)
+        if key:
+            return key
         command = ['gpg', '-d', '--batch', '--quiet']
         if path is None:
             path = '~/.zsh/openai_key.asc'

@@ -713,15 +713,24 @@ if is_linux:
         libc.prctl(PR_SET_NAME, name, 0, 0, 0)
 
     def get_openai_key(path=None):
-        key = os.environ.get('OPENAI_API_KEY', None)
-        if key:
-            return key
-        command = ['gpg', '-d', '--batch', '--quiet']
         if path is None:
             path = '~/.zsh/openai_key.asc'
         path = os.path.expanduser(path)
+        key = os.environ.get('OPENAI_API_KEY', None)
+        if key:
+            return key
+        text_path = path + '.txt'
+        try:
+            with open(text_path, 'r') as f:
+                key = f.read().strip()
+            return key
+        except IOError:
+            pass
+
         if not os.path.exists(path):
             raise RuntimeError('File not found: %s' % path)
+
+        command = ['gpg', '-d', '--batch', '--quiet']
         command.append(path)
         return subprocess.check_output(command).strip().decode('utf-8')
 

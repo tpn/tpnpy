@@ -536,6 +536,14 @@ def stream(query, size=None, limit=None,
         for result in query.slice(start, end):
             yield result
 
+def split_list(chunks, num_chunks):
+    # Calculate the length of each chunk
+    k, m = divmod(len(chunks), num_chunks)
+    return [
+        chunks[i * k + min(i, m):(i + 1) * k + min(i + 1, m)]
+            for i in range(num_chunks)
+    ]
+
 def stream_results(query):
     size = query.count()
     return progressbar(stream(query, size), total=size, leave=True)

@@ -641,6 +641,38 @@ class ComparePytestResults(InvariantAwareCommand):
         else:
             render_fancy_text_table(rows, **k)
 
+class GenerateDdCommands(InvariantAwareCommand):
+    """
+    Generates a series of dd commands to copy a file in parallel.
+    """
 
+    total_size_in_bytes = None
+    _total_size_in_bytes = None
+    class TotalSizeInBytesArg(PositiveIntegerInvariant):
+        _help = "Total size of the file to copy."
+
+    num_procs = None
+    _num_procs = None
+    class NumProcsArg(PositiveIntegerInvariant):
+        _help = "Number of processes to use."
+
+    src = None
+    class SrcArg(StringInvariant):
+        _help = "Path to the source file."
+
+    dst = None
+    class DstArg(StringInvariant):
+        _help = "Path to the destination file."
+
+    def run(self):
+        from .dd import get_dd_commands
+        dds = get_dd_commands(
+            total_size_in_bytes=self._total_size_in_bytes,
+            num_procs=self._num_procs,
+            src=self.src,
+            dst=self.dst,
+        )
+
+        self._out(dds)
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et                                             :

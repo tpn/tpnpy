@@ -119,14 +119,14 @@ def convert_dd_to_command(dd, input_file, output_file):
     cmd = (
         f'dd if={input_file} of={output_file} '
         f'bs={dd.bs} skip={dd.skip} seek={dd.seek} '
-        f'count={dd.count} status=progress &'
+        f'count={dd.count} conv=noerror,sync status=progress &'
     )
     return cmd
 
 def get_dd_commands(total_size_in_bytes, num_procs, src, dst):
     dds = get_dds(total_size_in_bytes, num_procs)
     lines = [
-        convert_dd_to_command(dd, src, dst)
+        convert_dd_to_command(dd, src, dst) for dd in dds
     ]
     return '\n'.join(lines)
 

@@ -2381,6 +2381,75 @@ def dds_example():
     print(text)
     return text
 
+#===============================================================================
+# Media & Support
+#===============================================================================
+def set_file_timestamps(file_path, date_time):
+    from datetime import datetime
+    timestamp = datetime.timestamp(date_time)
+    os.utime(file_path, (timestamp, timestamp))
+
+def get_image_datetime(file_path):
+    from PIL import Image
+    from datetime import datetime
+    with Image.open(file_path) as img:
+        meta_data = img._getexif()
+        if meta_data:
+            # Exif tags can be found in PIL.ExifTags
+            tag = 36867  # Tag for 'DateTimeOriginal'
+            datetime_original = meta_data.get(tag)
+            if datetime_original:
+                return datetime.strptime(datetime_original, '%Y:%m:%d %H:%M:%S')
+    return None
+
+def get_video_datetime(file_path, hour_offset=-7):
+    from hachoir.parser import createParser
+    from hachoir.metadata import extractMetadata
+    parser = createParser(file_path)
+    if not parser:
+        print("Unable to parse file:", file_path)
+        return None
+    with parser:
+        metadata = extractMetadata(parser)
+        if metadata:
+            date_time = metadata.get('creation_date')
+            if hour_offset != 0:
+                date_time = date_time + timedelta(hours=hour_offset)
+            return date_time
+    return None
+
+def set_timestamps_for_media_files(directory, out=None):
+    for file_name in os.listdir(directory):
+        file_path = os.path.join(directory, file_name)
+        date_time = None
+        is_image = (
+            file_path.lower().endswith('.jpg') or
+            file_path.lower().endswith('.jpeg') or
+            file_path.lower().endswith('.png') or
+            file_path.lower().endswith('.gif')
+        )
+        is_video = (
+            file_path.lower().endswith('.mov') or
+            file_path.lower().endswith('.mp4')
+        )
+        if is_image:
+            date_time = get_image_datetime(file_path)
+        elif is_video:
+            date_time = get_video_datetime(file_path)
+        else:
+            if out:
+                out(f"Skipping unrecognized media: {file_name}.")
+            continue
+
+        if date_time:
+            set_file_timestamps(file_path, date_time)
+            if out:
+                string_fmt = '%Y:%m:%d %H:%M:%S'
+                datetime_string = date_time.strftime(string_fmt)
+                out(f'Updated utimes for {file_name} to {datetime_string}.')
+        elif out:
+            out(f'No date/time found for {file_name}.')
+
 
 #===============================================================================
 # CSV Tools/Utils

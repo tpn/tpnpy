@@ -17,6 +17,7 @@ from .invariant import (
     PathInvariant,
     StringInvariant,
     DirectoryInvariant,
+    TimestampInvariant,
     MkDirectoryInvariant,
     PositiveIntegerInvariant,
 )
@@ -674,5 +675,49 @@ class GenerateDdCommands(InvariantAwareCommand):
         )
 
         self._out(dds)
+
+class SetTimestampsForMediaFiles(InvariantAwareCommand):
+    """
+    Sets the timestamps for media files in the current directory to the
+    timestamps of the files themselves.
+    """
+
+    path = None
+    class PathArg(DirectoryInvariant):
+        _help = "Path to the directory containing media files."
+
+    def run(self):
+        from .util import set_timestamps_for_media_files
+        out = self._out
+        path = self._path
+        set_timestamps_for_media_files(path, out)
+
+class SetTimestampForFile(InvariantAwareCommand):
+    """
+    Sets the timestamp for a file to the timestamp of the file itself.
+    """
+
+    path = None
+    class PathArg(PathInvariant):
+        _help = "Path to the file."
+
+    timestamp = None
+    _timestamp = None
+    class TimestampArg(TimestampInvariant):
+        _help = (
+            "Timestamp to set for the file in the format: "
+            "YYYY-MM-DD HH:MM:SS (24 hour time)"
+        )
+
+    def run(self):
+        import os
+        from datetime import datetime
+
+        out = self._out
+        path = self._path
+        timestamp = datetime.timestamp(self._timestamp)
+
+        os.utime(path, (timestamp, timestamp))
+        out(f'Set {path} to {datetime.fromtimestamp(timestamp)}.')
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et                                             :

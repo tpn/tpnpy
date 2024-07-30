@@ -594,8 +594,33 @@ class DateInvariant(Invariant):
 
         obj = self._obj
 
-
         self._store(datetime.date(date.year, date.month, date.day))
+        return True
+
+class TimestampInvariant(Invariant):
+    _type_desc = 'datetime'
+    _timestamp_format = '%Y-%m-%d %H:%M:%S'
+    _timestamp_format_str = 'YYYY-MM-DD HH:MM:SS'
+
+    @property
+    def expected(self):
+        return "a date in the format '%s'" % self._timestamp_format_str
+
+    def _store(self, value):
+        attr = '_' + self._name
+        setattr(self._obj, attr, value)
+
+    def _test(self):
+        fmt = self._timestamp_format
+        strptime = lambda d: datetime.datetime.strptime(d, fmt)
+        strftime = lambda d: datetime.datetime.strftime(d, fmt)
+        try:
+            timestamp = strptime(self.actual)
+        except ValueError:
+            return False
+
+        obj = self._obj
+        self._store(timestamp)
         return True
 
 class EndDateInvariant(DateInvariant):

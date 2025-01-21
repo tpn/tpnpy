@@ -321,7 +321,10 @@ class Config(RawConfigParser):
             files.append(filename)
 
         with open(files[0], 'r') as f:
-            self.readfp(f, files[0])
+            try:
+                self.read_file(f)
+            except AttributeError:
+                self.readfp(f, files[0])
 
         self.read(files[1:])
 

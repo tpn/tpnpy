@@ -181,6 +181,42 @@ def datetime_to_str(dt, fmt=None):
         fmt = '%Y-%m-%d %H:%M:%S'
     return dt.strftime(fmt)
 
+def fractional_hours_to_time(fractional_hours):
+    """
+    Convert fractional hours into 'hh:mm' format.
+
+    Args:
+        fractional_hours (float): Time represented as fractional hours.
+
+    Returns:
+        str: Time in 'hh:mm' format.
+    """
+    try:
+        # Extract whole hours
+        hh = int(fractional_hours)
+        # Convert decimal part to minutes
+        mm = round((fractional_hours - hh) * 60)
+
+        return f"{hh:02d}:{mm:02d}"
+    except ValueError:
+        raise ValueError("Invalid input. Must be a numerical fractional hour.")
+
+def time_to_fractional_hours(time_str):
+    """
+    Convert a time in 'hh:mm' format to fractional hours.
+
+    Args:
+        time_str (str): Time string in 'hh:mm' format.
+
+    Returns:
+        float: Time represented as fractional hours.
+    """
+    try:
+        hh, mm = map(int, time_str.split(':'))
+        return hh + (mm / 60)
+    except ValueError:
+        raise ValueError("Invalid time format. Use 'hh:mm' (e.g., '22:40').")
+
 def nanos_per_frame(fps):
     return (1.0 / float(fps)) * 1e9
 

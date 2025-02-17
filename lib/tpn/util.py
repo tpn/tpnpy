@@ -2458,16 +2458,11 @@ def set_timestamps_for_media_files(directory, out=None):
     for file_name in os.listdir(directory):
         file_path = os.path.join(directory, file_name)
         date_time = None
-        is_image = (
-            file_path.lower().endswith('.jpg') or
-            file_path.lower().endswith('.jpeg') or
-            file_path.lower().endswith('.png') or
-            file_path.lower().endswith('.gif')
-        )
-        is_video = (
-            file_path.lower().endswith('.mov') or
-            file_path.lower().endswith('.mp4')
-        )
+        image_endings = ('.jpg', '.jpeg', '.png', '.gif')
+        video_endings = ('.mov', '.mp4')
+        file_path_lower = file_path.lower()
+        is_image = file_path_lower.endswith(image_endings)
+        is_video = file_path_lower.endswith(video_endings)
         if is_image:
             date_time = get_image_datetime(file_path)
         elif is_video:

@@ -5,7 +5,9 @@ import sys
 
 import textwrap
 
-from .util import strip_linesep_if_present
+from .util import (
+    strip_linesep_if_present,
+)
 
 from .command import (
     Command,
@@ -719,5 +721,111 @@ class SetTimestampForFile(InvariantAwareCommand):
 
         os.utime(path, (timestamp, timestamp))
         out(f'Set {path} to {datetime.fromtimestamp(timestamp)}.')
+
+class SwitchVsCodeAndCursor(InvariantAwareCommand):
+    """
+    Switches the focus between VS Code and the cursor.
+    """
+
+    def run(self):
+        import subprocess
+
+        from .util import (
+            get_focused_window,
+            get_windows,
+            get_window_geometry,
+            move_window,
+        )
+
+        cursor_focused = False
+        code_focused = False
+
+        focused_win = get_focused_window(int_conversion=True)
+
+        cursor_wins = get_windows('cursor.Cursor', int_conversion=True)
+        code_wins = get_windows('code.Code', int_conversion=True)
+
+        cursor_win = None
+        code_win = None
+
+        if focused_win in cursor_wins:
+            cursor_win = focused_win
+            cursor_focused = True
+            # Find top-most VS Code window
+            code_win = next(
+                (win for win in code_wins if win != cursor_win),
+                None,
+            )
+        elif focused_win in code_wins:
+            code_win = focused_win
+            code_focused = True
+            # Find top-most Cursor window
+            cursor_win = next(
+                (win for win in cursor_wins if win != code_win),
+                None
+            )
+        else:
+            self._out("Neither Cursor nor VS Code is focused.")
+            return
+
+        if not cursor_win:
+            self._out("Found VS Code window but could not find Cursor window.")
+            return
+
+        if not code_win:
+            self._out("Found Cursor window but could not find VS Code window.")
+            return
+
+        cursor_win = str(cursor_win)
+        code_win = str(code_win)
+
+        cursor_geom = get_window_geometry(cursor_win)
+        code_geom = get_window_geometry(code_win)
+
+        # Swap positions
+        move_window(cursor_win, code_geom['X'], code_geom['Y'])
+        move_window(code_win, cursor_geom['X'], cursor_geom['Y'])
+
+        # Restore focus
+        if cursor_focused:
+            subprocess.call(['xdotool', 'windowactivate', cursor_win])
+        elif code_focused:
+            subprocess.call(['xdotool', 'windowactivate', code_win])
+
+class GetActiveWindow(InvariantAwareCommand):
+    """
+    Gets the title of the currently active window.
+    """
+
+    name = None
+    class NameArg(StringInvariant):
+        _help = "Name of the active window to retrieve."
+
+    def run(self):
+        from .util import is_linux, get_windows
+        if not is_linux:
+            raise CommandError("This command is only supported on Linux.")
+        result = get_windows(self.name)
+        if result:
+            msg = f'Active window: {result[0]}'
+        else:
+            msg = 'No active window found.'
+        self._out(msg)
+
+class GetFocusedWindow(InvariantAwareCommand):
+    """
+    Gets the title of the currently active window.
+    """
+
+    def run(self):
+        from .util import is_linux, get_focused_window
+        if not is_linux:
+            raise CommandError("This command is only supported on Linux.")
+        result = get_focused_window()
+        if result:
+            msg = f'Focused window: {result}'
+        else:
+            msg = 'No active window found.'
+        self._out(msg)
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et                                             :

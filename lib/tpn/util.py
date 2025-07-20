@@ -2926,6 +2926,41 @@ class SortedCollection(object):
             return self._items[i]
         raise ValueError('No item found with key above: %r' % (k,))
 
+if is_linux:
+    def get_focused_window(int_conversion=False):
+        result = subprocess.check_output(
+            ['xdotool', 'getactivewindow']
+        ).decode().strip()
+        if result and int_conversion:
+            result = int(result)
+        return result
+
+    def get_window_geometry(win_id):
+        output = subprocess.check_output(
+            ['xdotool', 'getwindowgeometry', '--shell', win_id]
+        ).decode()
+        geom = {}
+        for line in output.splitlines():
+            key, value = line.split('=')
+            geom[key] = int(value)
+        return geom
+
+    def get_windows(app_class, int_conversion=False):
+        output = subprocess.check_output(
+            ['wmctrl', '-lx']
+        ).decode().splitlines()
+        wins = []
+        for line in output:
+            parts = line.split(None, 4)
+            win_id, cls = parts[0], parts[2]
+            if app_class.lower() in cls.lower():
+                wins.append(win_id)
+        if int_conversion:
+            wins = [int(win_id, 16) for win_id in wins]
+        return wins
+
+    def move_window(win_id, x, y):
+        subprocess.call(['wmctrl', '-ir', win_id, '-e', f'0,{x},{y},-1,-1'])
 
 if __name__ == '__main__':
     import doctest

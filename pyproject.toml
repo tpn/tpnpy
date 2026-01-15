@@ -1,0 +1,44 @@
+[build-system]
+requires = [
+    "setuptools>=68",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tpn"
+version = "0.1"
+description = "Trent's Dev Tools"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Trent Nelson", email = "trent@nospam.trent.me" },
+]
+classifiers = [
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Development Status :: 5 - Production/Stable",
+    "Operating System :: Microsoft :: Windows",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Information Technology",
+    "Programming Language :: Python",
+    "Programming Language :: Unix Shell",
+]
+keywords = ["tpn", "devtools"]
+
+[project.urls]
+Homepage = "https://github.com/tpn"
+Repository = "https://github.com/tpn/tpn"
+
+[project.scripts]
+tpn = "tpn.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "lib"}
+
+[tool.setuptools.packages.find]
+where = ["lib"]
+include = ["tpn*"]
+
